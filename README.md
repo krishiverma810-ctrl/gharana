@@ -19,7 +19,7 @@ npm run build      # type-check + production build into dist/
 npm run preview    # serve the production build → http://localhost:4173
 npm run icons      # regenerate PNG icons from public/favicon.svg
 ```
-Pushing to `main` on GitHub makes Vercel auto-deploy.
+Pushing to `main` on GitHub makes Vercel auto-deploy → **https://gharana-blue.vercel.app**
 
 ## Stack
 Vite + React 19 + TypeScript · Tailwind v4 + CSS variables (palette tokens) · Zustand · Dexie (IndexedDB) ·
