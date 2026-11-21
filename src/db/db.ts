@@ -1,33 +1,71 @@
 import Dexie, { type EntityTable } from 'dexie'
+import type {
+  Backup, Capture, DayLog, FocusSession, Goal, Habit, HabitLog, LiftSet, Shift, Template, Txn, Wish, Workout,
+} from './types'
 
 // GHARANA's on-device database (IndexedDB via Dexie). Everything saves here instantly
-// and works offline. RULE: never edit an old version() block — add a new version with
-// an upgrade() so existing data is migrated, never lost.
+// and works offline.
+//
+// MIGRATION RULE: never edit an old version() block. Add a new version(n) with the
+// full store list and, if data needs reshaping, an .upgrade() — existing data is kept.
+// Every version is recorded in MIGRATIONS below so Settings can show the log.
 
 export interface KV {
   key: string
   value: unknown
 }
 
-/** One row per local day ("2026-11-22"), holding simple daily counters. */
-export interface DayLog {
-  day: string
-  waterMl: number
-  proteinG: number
-  updatedAt: number
-}
+export const MIGRATIONS = [
+  { version: 1, date: '2026-11-22', note: 'Phase 0 — kv + daily water log' },
+  { version: 2, date: '2026-11-22', note: 'Phase 1 — habits, blueprint, patrol, vault, captures, backups' },
+]
 
 export class GharanaDB extends Dexie {
   kv!: EntityTable<KV, 'key'>
   days!: EntityTable<DayLog, 'day'>
+  habits!: EntityTable<Habit, 'id'>
+  habitLogs!: EntityTable<HabitLog, 'id'>
+  templates!: EntityTable<Template, 'id'>
+  shifts!: EntityTable<Shift, 'id'>
+  focus!: EntityTable<FocusSession, 'id'>
+  workouts!: EntityTable<Workout, 'id'>
+  lifts!: EntityTable<LiftSet, 'id'>
+  goals!: EntityTable<Goal, 'id'>
+  txns!: EntityTable<Txn, 'id'>
+  wishes!: EntityTable<Wish, 'id'>
+  captures!: EntityTable<Capture, 'id'>
+  backups!: EntityTable<Backup, 'id'>
 
   constructor() {
     super('gharana')
-    // v1 — Phase 0 foundations
     this.version(1).stores({
       kv: 'key',
       days: 'day',
     })
+    this.version(2)
+      .stores({
+        kv: 'key',
+        days: 'day',
+        habits: 'id, order',
+        habitLogs: 'id, habitId, day',
+        templates: 'id, order',
+        shifts: 'id, day',
+        focus: 'id, day',
+        workouts: 'id, day, type',
+        lifts: 'id, day, lift',
+        goals: 'id, order',
+        txns: 'id, day, kind, goalId',
+        wishes: 'id',
+        captures: 'id, dest, at',
+        backups: '++id, at',
+      })
+      .upgrade(async (tx) => {
+        // v1 day rows only had waterMl — give them the new defaults.
+        await tx.table('days').toCollection().modify((d: Partial<DayLog>) => {
+          d.proteinG ??= 0
+          d.updatedAt ??= Date.now()
+        })
+      })
   }
 }
 
@@ -44,10 +82,33 @@ export async function requestPersistentStorage() {
   }
 }
 
-export async function addWater(day: string, ml: number) {
+export const uid = () =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID().slice(0, 12)
+    : Math.random().toString(36).slice(2, 14)
+
+// ── Day helpers ──────────────────────────────────────────────────────
+
+export function emptyDay(day: string): DayLog {
+  return { day, waterMl: 0, proteinG: 0, updatedAt: Date.now() }
+}
+
+/** Read-modify-write a day row atomically. */
+export async function updateDay(day: string, fn: (d: DayLog) => void) {
   await db.transaction('rw', db.days, async () => {
-    const row = await db.days.get(day)
-    const waterMl = Math.max(0, (row?.waterMl ?? 0) + ml)
-    await db.days.put({ day, waterMl, proteinG: row?.proteinG ?? 0, updatedAt: Date.now() })
+    const row = (await db.days.get(day)) ?? emptyDay(day)
+    fn(row)
+    row.updatedAt = Date.now()
+    await db.days.put(row)
   })
 }
+
+export const addWater = (day: string, ml: number) =>
+  updateDay(day, (d) => {
+    d.waterMl = Math.max(0, d.waterMl + ml)
+  })
+
+export const addProtein = (day: string, g: number) =>
+  updateDay(day, (d) => {
+    d.proteinG = Math.max(0, d.proteinG + g)
+  })

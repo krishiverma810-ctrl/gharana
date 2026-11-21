@@ -11,6 +11,7 @@ import '@fontsource/jetbrains-mono/latin-400.css' // numbers: clear l vs 1 vs I
 import '@fontsource/jetbrains-mono/latin-600.css'
 import '@fontsource/noto-serif-devanagari/devanagari-400.css' // Sanskrit / Hindi
 import './index.css'
+import './estate.css'
 
 import { App } from './app/App'
 import { requestPersistentStorage } from './db/db'

@@ -8,7 +8,7 @@ The full spec is in [`GHARANA_v3_BUILD_PROMPT.md`](GHARANA_v3_BUILD_PROMPT.md). 
 
 ## Status
 - [x] **Phase 0** — setup, placeholder Lounge, living skyline, 9 palettes, on-device DB, PWA
-- [ ] Phase 1 — Core Estate (by 2 Dec 2026)
+- [x] **Phase 1** — Core Estate: phone + PC shells, Corridor, command palette, Lounge, Daily Rites, Morning Rite, Night Debrief, Blueprint (+ focus timer, shifts), Patrol (+ PR vault, boxing rounds), Vault, Settings (phases, Travel Mode, rooms, data)
 - [ ] Phase 2 — Travel-ready · [ ] 2.5 — Voice/JARVIS · [ ] 3 — Boardroom + Library · [ ] 4 — Full House · [ ] 5 — Polish
 
 ## Run it
@@ -20,6 +20,13 @@ npm run preview    # serve the production build → http://localhost:4173
 npm run icons      # regenerate PNG icons from public/favicon.svg
 ```
 Pushing to `main` on GitHub makes Vercel auto-deploy → **https://gharana-blue.vercel.app**
+
+## Phase 1 notes / known gaps
+- Blueprint blocks are edited by tapping them (start/end pickers); true drag-to-resize comes in Phase 5 polish.
+- 26 Gita verses + 50 quotes ship now; the full 60 / 150 sets arrive with later phases.
+- Desktop Lounge widgets are a fixed grid; drag/resize/add/remove widgets is Phase 4.
+- The ALFRED orb + docked panel arrive with ALFRED (Phase 2) and voice (Phase 2.5).
+- Scheduled push nudges (water, wind-down) are Phase 4; the focus timer can already notify.
 
 ## Stack
 Vite + React 19 + TypeScript · Tailwind v4 + CSS variables (palette tokens) · Zustand · Dexie (IndexedDB) ·

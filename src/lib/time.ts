@@ -78,3 +78,49 @@ export function timeOfDay(hour: number): 'dawn' | 'day' | 'dusk' | 'night' {
   if (hour >= 17 && hour < 20) return 'dusk'
   return 'night'
 }
+
+/** "2026-11-22" + n days → "2026-11-2x" (calendar maths, no time zones involved). */
+export function addDays(dayKey: string, n: number): string {
+  const d = new Date(`${dayKey}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+
+/** 0 = Sunday … 6 = Saturday for a day key. */
+export function weekdayOf(dayKey: string): number {
+  return new Date(`${dayKey}T00:00:00Z`).getUTCDay()
+}
+
+/** Monday of the week containing dayKey. */
+export function weekStart(dayKey: string): string {
+  const wd = weekdayOf(dayKey)
+  return addDays(dayKey, wd === 0 ? -6 : 1 - wd)
+}
+
+export function hmToMin(hm: string): number {
+  const [h, m] = hm.split(':').map(Number)
+  return (h || 0) * 60 + (m || 0)
+}
+
+export function minToHm(min: number): string {
+  const m = ((min % 1440) + 1440) % 1440
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
+}
+
+/** "13:30" → "1:30 pm" */
+export function prettyHm(hm: string): string {
+  const m = hmToMin(hm)
+  const h = Math.floor(m / 60)
+  const mm = m % 60
+  const suffix = h >= 12 ? 'pm' : 'am'
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return mm === 0 ? `${h12}${suffix}` : `${h12}:${String(mm).padStart(2, '0')}${suffix}`
+}
+
+export function shortDate(dayKey: string): string {
+  return new Date(`${dayKey}T00:00:00Z`).toLocaleDateString('en-AU', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short' })
+}
+
+export function monthKey(dayKey: string): string {
+  return dayKey.slice(0, 7)
+}

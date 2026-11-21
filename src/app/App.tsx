@@ -1,40 +1,131 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useState, type ComponentType } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Skyline } from '../components/Skyline'
+import { Confetti, Splash, Toasts } from '../components/Overlays'
+import { HouseProvider, useHouse } from './house'
+import { usePath } from './router'
+import { DesktopShell, PhoneShell } from './Shells'
+import { CommandPalette } from './CommandPalette'
+import { useSettings } from '../store/settings'
+import { useFocus } from '../store/focus'
+import { ensureSeeded } from '../db/seed'
+import { autoBackupIfDue } from '../db/backup'
+import { roomByPath } from '../config/rooms'
+import { primeAudio } from '../lib/sound'
 import { Lounge } from '../rooms/Lounge'
-import { useNow } from '../store/useClock'
-import { useSettings, currentTimeZone } from '../store/settings'
-import { localDayKey, timeOfDay, zonedParts } from '../lib/time'
-import { applyPaletteVars, paletteForDay } from '../theme/daily'
+import { DailyRites } from '../rooms/DailyRites'
+import { MorningRite } from '../rooms/MorningRite'
+import { NightDebrief } from '../rooms/NightDebrief'
+import { Blueprint, FocusFullscreen } from '../rooms/Blueprint'
+import { Patrol } from '../rooms/Patrol'
+import { Vault } from '../rooms/Vault'
+import { SettingsRoom } from '../rooms/Settings'
+import { ComingSoon, Corridor } from '../rooms/Corridor'
+
+const ROOM_COMPONENTS: Record<string, ComponentType> = {
+  lounge: Lounge,
+  rites: DailyRites,
+  morning: MorningRite,
+  night: NightDebrief,
+  blueprint: Blueprint,
+  patrol: Patrol,
+  vault: Vault,
+  settings: SettingsRoom,
+}
+
+type Shell = 'phone' | 'desktop'
+
+function useShell(): Shell {
+  const layout = useSettings((s) => s.layout)
+  const detect = (): Shell => {
+    if (layout === 'phone') return 'phone'
+    if (layout === 'desktop' || layout === 'tablet') return 'desktop'
+    return window.innerWidth >= 900 ? 'desktop' : 'phone'
+  }
+  const [shell, setShell] = useState<Shell>(detect)
+  useEffect(() => {
+    const on = () => setShell(detect())
+    on()
+    window.addEventListener('resize', on)
+    return () => window.removeEventListener('resize', on)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layout])
+  return shell
+}
 
 export function App() {
-  const now = useNow(1000)
-  const { phases, timeZoneOverride, pinnedPaletteId, reducedMotion, batterySaver } = useSettings()
+  const loaded = useSettings((s) => s.loaded)
+  const [ready, setReady] = useState(false)
 
-  const timeZone = currentTimeZone(phases, timeZoneOverride, now)
-  const dayKey = localDayKey(now, timeZone)
-  const hour = zonedParts(now, timeZone).hour
-  const tod = timeOfDay(hour)
-
-  const palette = useMemo(() => paletteForDay(dayKey, pinnedPaletteId), [dayKey, pinnedPaletteId])
-  useEffect(() => applyPaletteVars(palette), [palette])
-
-  const isPhone = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches
-  const still = reducedMotion || batterySaver
+  useEffect(() => {
+    void (async () => {
+      await useSettings.getState().load()
+      await ensureSeeded()
+      setReady(true)
+      void autoBackupIfDue()
+    })()
+    const prime = () => primeAudio()
+    window.addEventListener('pointerdown', prime, { once: true })
+  }, [])
 
   return (
-    <div className="relative min-h-dvh">
-      {/* Battery saver freezes the skyline's animation; it never removes the city. */}
-      <Skyline palette={palette} tod={tod} still={still} layers={isPhone ? 2 : 3} />
-      <div className="skyline-veil" />
+    <>
+      <Splash />
+      {loaded && ready && (
+        <HouseProvider>
+          <Estate />
+        </HouseProvider>
+      )}
+    </>
+  )
+}
 
-      <main className="relative z-10 mx-auto w-full max-w-md px-4 pt-[calc(env(safe-area-inset-top)+20px)] pb-[calc(env(safe-area-inset-bottom)+24px)]">
-        <header className="mb-6 text-center">
-          <div className="sunburst-bg" aria-hidden="true" />
-          <h1 className="font-display text-5xl tracking-[0.12em] text-[var(--accent)] drop-shadow">GHARANA</h1>
-          <p className="mt-1 font-deco text-xs tracking-[0.45em] text-[var(--ink)]">THE HOUSE BUILDS THE NAME</p>
-        </header>
-        <Lounge now={now} timeZone={timeZone} palette={palette} />
-      </main>
+function Estate() {
+  const house = useHouse()
+  const path = usePath()
+  const shell = useShell()
+  const reduced = useSettings((s) => s.reducedMotion)
+  const battery = useSettings((s) => s.batterySaver)
+  const lowGlare = useSettings((s) => s.lowGlare)
+  const checkFocus = useFocus((s) => s.check)
+
+  // Focus timer engine — checks once a second whether a session finished.
+  useEffect(() => {
+    const t = setInterval(() => checkFocus(house.today), 1000)
+    return () => clearInterval(t)
+  }, [checkFocus, house.today])
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('low-glare', lowGlare)
+    document.documentElement.classList.toggle('reduce-motion', reduced)
+  }, [lowGlare, reduced])
+
+  const room = path === '/corridor' ? null : roomByPath(path)
+  const Comp = room ? ROOM_COMPONENTS[room.id] : undefined
+  const content = path === '/corridor' ? <Corridor /> : Comp ? <Comp /> : room ? <ComingSoon id={room.id} /> : <Lounge />
+  const Shell = shell === 'phone' ? PhoneShell : DesktopShell
+
+  return (
+    <div className="relative min-h-dvh" style={room ? { ['--room' as string]: room.accent } : undefined}>
+      <Skyline palette={house.palette} tod={house.tod} still={reduced || battery} layers={shell === 'phone' ? 2 : 3} />
+      <div className="skyline-veil" />
+      <Shell>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={path}
+            initial={reduced ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduced ? undefined : { opacity: 0, y: -6 }}
+            transition={{ duration: 0.22 }}
+          >
+            {content}
+          </motion.div>
+        </AnimatePresence>
+      </Shell>
+      <CommandPalette />
+      <FocusFullscreen />
+      <Toasts />
+      <Confetti />
     </div>
   )
 }
