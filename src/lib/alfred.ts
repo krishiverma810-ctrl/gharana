@@ -405,7 +405,8 @@ export async function flushQueue(): Promise<number> {
 /** Server health check for Settings. */
 export async function alfredStatus(): Promise<{ ok: boolean; configured: boolean }> {
   try {
-    const r = await fetch('/api/alfred', { cache: 'no-store' })
+    // Unique URL so no stale CDN copy is ever used.
+    const r = await fetch(`/api/alfred?status=${Date.now()}`, { cache: 'no-store' })
     if (!r.ok) return { ok: false, configured: false }
     return (await r.json()) as { ok: boolean; configured: boolean }
   } catch {
