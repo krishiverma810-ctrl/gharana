@@ -14,7 +14,9 @@ The full spec is in [`GHARANA_v3_BUILD_PROMPT.md`](GHARANA_v3_BUILD_PROMPT.md). 
 - [x] **Phase 2.5b** — Windows desktop app (Tauri, `src-tauri/`): system-wide hotkeys (rebindable), always-on-top ALFRED bar, tray, close-to-tray, launch on startup, native Windows speech recognition. Build: `npx tauri build` → `src-tauri/target/release/bundle/nsis/`
 - [x] **Phase 3** — Boardroom + Library: Closer (kanban + Wins Wall + daily tactic), NAZARA HQ, K.S. VOL. 1 Studio (growth chart), App Lab (feature requests → Claude Code), Job Desk (+ P-licence logbook), MPA Desk, Study (units, WAM/GPA, SM-2 flashcards, explain-it-back), Dental Wing (GAMSAT, experience, interview practice), Reading Room, Skills Forge (20/100-hour milestones, language corner)
 - [x] **Phase 4a** — Full House (in-app): Mehfil (people cards that go cold, birthdays, check-ins, 60 social reps, sohbat), Mentor’s Study (30-year-old me, vision board, letters from ALFRED), Trophy Hall (XP, levels, 136 achievements, Wins Wall, season pass rewards), Challenge Board (7/30/75-day + vs a mate), Jukebox, Grooming Room (AM/PM routine, fragrance rotation, haircuts, ALFRED fit check), Bulk Ledger (weight chart, measurements, private progress photos, protein/kcal quick-adds incl. India meals), Inbox (sort captures into rooms), Archive (every day as a page, week/month/lock-in reports), shareable story cards, passcode + Face ID lock, Sunday Review (local pattern-spotting + ALFRED proposals you approve)
-- [ ] Phase 4b — Supabase sync (phone ↔ laptop) + push notifications · [ ] Phase 5 — Polish
+- [x] **Phase 4b** — Supabase sync (phone ↔ laptop, offline-first, newest edit wins) + push notifications (server-scheduled, follow Travel Mode) + .ics fallback
+- [x] **Deepali’s Corner v2** — five tabs: Today (her clock in any zone, awake/asleep, call windows, time converter, countdown, three daily touches, follow-ups on her big days, question of the night, call log) · Her (the dossier: orders, taste, sizes, how she works, her world; her people; promises) · Us (memories, firsts + on-this-day, reasons, bucket list, inside jokes, after-a-fight notes) · Plans (Surprise-me date picker, ALFRED date planner, date log, Bali) · Gifts (occasions with lead-time warnings, ALFRED gift finder, help-me-say-it, gifts given)
+- [ ] Phase 5 — Polish
 
 ## Run it
 ```bash
@@ -32,6 +34,9 @@ Pushing to `main` on GitHub makes Vercel auto-deploy → **https://gharana-blue.
 - Desktop Lounge widgets are a fixed grid; drag/resize/add/remove widgets is Phase 4.
 - The ALFRED orb + docked panel arrive with ALFRED (Phase 2) and voice (Phase 2.5).
 - Scheduled push nudges (water, wind-down) are Phase 4; the focus timer can already notify.
+
+## One-run cloud setup
+`node scripts/setup-cloud.mjs` — asks for a Supabase token, a Vercel token and (optionally) an Anthropic key, then creates the Supabase project, tables and scheduler, sets every Vercel environment variable, redeploys and checks. Safe to run again.
 
 ## ALFRED setup (server)
 Vercel → Project → Settings → Environment Variables:

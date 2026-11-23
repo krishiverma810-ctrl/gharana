@@ -184,6 +184,23 @@ export async function buildSnapshot(channel: Channel = 'chat'): Promise<string> 
   if (mission) lines.push(`WILDCARD MISSION today: ${mission.text}`)
   const y = yesterday?.night
   if (y?.completedAt) lines.push(`YESTERDAY'S DEBRIEF: won "${y.won ?? ''}", dodged "${y.dodged ?? ''}", lesson "${y.lesson ?? ''}", mood ${y.mood ?? '?'}/10.`)
+  // Deepali's Corner — so ALFRED can say "you haven't called her in 3 days" or "her exam was today, ask how it went".
+  const dp = (await db.kv.get('deepali:profile'))?.value as Record<string, string> | undefined
+  const dItems = await db.items.where('room').equals('deepali').toArray()
+  const lastCall = dItems.filter((x) => x.kind === 'call' && x.date).sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))[0]
+  const herDue = dItems.filter((x) => x.kind === 'herevent' && x.date && x.date <= today && !x.done).map((x) => x.text)
+  const occ = dItems
+    .filter((x) => x.kind === 'special' && x.date)
+    .map((x) => {
+      const md = x.date!.slice(5)
+      let o = `${today.slice(0, 4)}-${md}`
+      if (o < today) o = `${Number(today.slice(0, 4)) + 1}-${md}`
+      return { t: x.text, d: daysBetween(today, o) }
+    })
+    .sort((a, b) => a.d - b.d)[0]
+  lines.push(
+    `${s.deepaliName.toUpperCase()} (girlfriend): last contact ${lastCall ? `${daysBetween(lastCall.date!, today)}d ago` : 'not logged'}${dp?.tz ? `, she's in ${dp.tz}` : ''}${dp?.next ? `, next together ${dp.next}` : ''}${occ ? `, next occasion ${occ.t} in ${occ.d}d` : ''}${herDue.length ? `; ask her how these went: ${herDue.join(', ')}` : ''}.`,
+  )
   return lines.join('\n')
 }
 

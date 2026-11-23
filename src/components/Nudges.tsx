@@ -5,11 +5,13 @@ import { useHouse } from '../app/house'
 import { navigate } from '../app/router'
 import { useSettings } from '../store/settings'
 import { daysBetween } from '../lib/time'
+import { useFollowUps, useGiftAlerts } from '../rooms/Deepali'
+import { useItems } from './ListCard'
 
 // In-app nudges on the Lounge — work offline, no server needed. The top 3 that matter right now.
 
 export function Nudges() {
-  const { today, hour } = useHouse()
+  const { today, hour, away } = useHouse()
   const s = useSettings()
   const day = useDay(today)
   const people = useLiveQuery(() => db.people.toArray(), []) ?? []
@@ -17,7 +19,16 @@ export function Nudges() {
   const overdue = useLiveQuery(() => db.deals.where('stage').anyOf(['radar', 'table', 'closing']).filter((d) => !!d.due && d.due < today).count(), [today]) ?? 0
   const inbox = useLiveQuery(() => db.captures.filter((c) => !c.sorted).count(), []) ?? 0
 
+  const herName = s.deepaliName
+  const followUps = useFollowUps(today)
+  const giftAlerts = useGiftAlerts(today, away)
+  const calls = useItems('deepali', 'call')
+  const lastCall = calls.reduce((m, c) => ((c.date ?? '') > m ? (c.date ?? '') : m), '')
+
   const list: { text: string; to: string }[] = []
+  for (const g of giftAlerts.slice(0, 1)) list.push({ text: `${g.d.text} is ${g.days === 0 ? 'today' : `in ${g.days} days`} and the gift isn’t sorted.`, to: '/deepali' })
+  if (followUps.length) list.push({ text: `Ask ${herName} how ${followUps[0].text} went.`, to: '/deepali' })
+  if (away && lastCall && daysBetween(lastCall, today) >= 2) list.push({ text: `${daysBetween(lastCall, today)} days since you properly spoke to ${herName}. Call her, sir.`, to: '/deepali' })
   const expectWater = s.waterTargetMl * Math.min(1, Math.max(0, (hour - 8) / 13))
   if (hour >= 12 && day.waterMl < expectWater - 500) list.push({ text: `You’re ${((expectWater - day.waterMl) / 1000).toFixed(1)} L behind on water, sir.`, to: '/' })
   if (hour >= 13 && day.proteinG < s.proteinTargetG * 0.35) list.push({ text: `Only ${day.proteinG} g protein so far — the bulk needs feeding.`, to: '/bulk' })

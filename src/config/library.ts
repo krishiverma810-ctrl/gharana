@@ -156,4 +156,6 @@ export const CHANGELOG: { phase: string; date: string; notes: string }[] = [
   { phase: 'Phase 2', date: '23 Nov 2026', notes: 'Travel-ready: Concierge, location skins, Family Room, Deepali’s Corner, Wildcard, Calendar, ALFRED.' },
   { phase: 'Phase 2.5', date: '23 Nov 2026', notes: 'Voice: Gold Orb, offline commands, Siri bridge, Memory Bank, Windows desktop app with global hotkeys.' },
   { phase: 'Phase 3', date: '23 Nov 2026', notes: 'Boardroom + Library: Closer, NAZARA HQ, K.S. VOL. 1, App Lab, Job Desk, MPA Desk, Study (spaced repetition), Dental Wing, Reading Room, Skills Forge.' },
+  { phase: 'Phase 4', date: '23 Nov 2026', notes: 'Full House, Archive, Sunday Review, Trophy Hall, phone ↔ laptop sync, push reminders.' },
+  { phase: 'Deepali v2', date: '23 Nov 2026', notes: 'Deepali’s Corner rebuilt: her clock anywhere, daily touches, follow-ups, the dossier, memories, date planner, gift lead-time warnings.' },
 ]
