@@ -10,6 +10,9 @@
 //!   • A tray icon with quick actions, today's summary, and launch-on-startup.
 //!   • Closing the window hides it to the tray so the hotkeys keep working.
 
+#[cfg(windows)]
+mod stt;
+
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tauri::{
@@ -36,6 +39,8 @@ impl Default for Hotkeys {
 struct AppState {
     hotkeys: Mutex<Hotkeys>,
     pinned: Mutex<bool>,
+    #[cfg(windows)]
+    stt: Mutex<Option<std::sync::mpsc::Sender<stt::Cmd>>>,
 }
 
 fn hotkeys_path(app: &AppHandle) -> Option<std::path::PathBuf> {
@@ -162,6 +167,49 @@ fn open_main(app: AppHandle, path: Option<String>) {
     }
 }
 
+// ── Native speech-to-text ───────────────────────────────────────────────
+
+#[cfg(windows)]
+fn stt_send(app: &AppHandle, cmd: stt::Cmd) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    let guard = state.stt.lock().unwrap();
+    guard.as_ref().ok_or("speech not ready")?.send(cmd).map_err(|e| e.to_string())
+}
+
+/// Start listening. `hold` = push-to-talk (until stt_stop); otherwise ends on the first pause.
+#[tauri::command]
+async fn stt_start(app: AppHandle, lang: String, hold: bool) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        let (tx, rx) = std::sync::mpsc::channel();
+        stt_send(&app, stt::Cmd::Start { lang, hold, reply: tx })?;
+        return tauri::async_runtime::spawn_blocking(move || rx.recv().unwrap_or(Err("speech thread stopped".into())))
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+    #[allow(unreachable_code)]
+    Err("native speech is only available on Windows".into())
+}
+
+/// Stop listening and return everything heard.
+#[tauri::command]
+async fn stt_stop(app: AppHandle) -> Result<String, String> {
+    #[cfg(windows)]
+    {
+        let (tx, rx) = std::sync::mpsc::channel();
+        stt_send(&app, stt::Cmd::Stop { reply: tx })?;
+        return tauri::async_runtime::spawn_blocking(move || rx.recv().unwrap_or_default()).await.map_err(|e| e.to_string());
+    }
+    #[allow(unreachable_code)]
+    Ok(String::new())
+}
+
+#[tauri::command]
+fn stt_cancel(app: AppHandle) {
+    #[cfg(windows)]
+    let _ = stt_send(&app, stt::Cmd::Cancel);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -193,10 +241,21 @@ pub fn run() {
                 })
                 .build(),
         )
-        .manage(AppState { hotkeys: Mutex::new(Hotkeys::default()), pinned: Mutex::new(false) })
-        .invoke_handler(tauri::generate_handler![hide_overlay, set_overlay_pinned, get_hotkeys, set_hotkeys, set_tray_summary, open_main])
+        .manage(AppState {
+            hotkeys: Mutex::new(Hotkeys::default()),
+            pinned: Mutex::new(false),
+            #[cfg(windows)]
+            stt: Mutex::new(None),
+        })
+        .invoke_handler(tauri::generate_handler![hide_overlay, set_overlay_pinned, get_hotkeys, set_hotkeys, set_tray_summary, open_main, stt_start, stt_stop, stt_cancel])
         .setup(|app| {
             let handle = app.handle().clone();
+
+            // Native speech recogniser thread.
+            #[cfg(windows)]
+            {
+                *app.state::<AppState>().stt.lock().unwrap() = Some(stt::spawn(handle.clone()));
+            }
 
             // Hotkeys
             let h = load_hotkeys(&handle);

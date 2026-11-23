@@ -37,6 +37,7 @@ function friendly(e: unknown): string {
   if (m === 'no_speech_input') return 'This browser can’t listen. Use the mic on your keyboard instead, or turn on the premium voice in Settings.'
   if (m === 'mic_denied') return 'Microphone access is off. Allow it for this app in Settings → Safari → Microphone (or the browser’s site settings).'
   if (m === 'network') return 'Speech recognition needs a connection on this device.'
+  if (m === 'speech_privacy') return 'Windows needs “Online speech recognition” switched on: Settings → Privacy & security → Speech → On. Then try again.'
   return m
 }
 

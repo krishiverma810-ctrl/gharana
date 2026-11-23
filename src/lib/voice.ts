@@ -1,5 +1,6 @@
 import { getSettings } from '../store/settings'
 import { getHouseKey } from './alfred'
+import { invoke, isDesktop, onDesktop } from './desktop'
 
 // Voice I/O for ALFRED.
 //   Listening: the browser's built-in speech recognition (free; on iPhone it uses Apple's engine).
@@ -57,6 +58,8 @@ export interface ListenOpts {
 
 /** Start listening. Throws if this device can't do speech input. */
 export function listen(opts: ListenOpts = {}): Listener {
+  // Inside the Windows app the browser speech API is a dud — use Windows' own recogniser.
+  if (isDesktop()) return listenNative(opts)
   const Ctor = srCtor()
   if (Ctor) return listenBrowser(Ctor, opts)
   if (canRecord() && getSettings().voiceProvider === 'premium') return listenRecorder(opts)
@@ -120,6 +123,48 @@ function listenBrowser(Ctor: SRCtor, opts: ListenOpts): Listener {
         /* ignore */
       }
       resolve('')
+    },
+  }
+}
+
+/** Windows app: native dictation via the desktop shell (see src-tauri/src/stt.rs). */
+function listenNative(opts: ListenOpts): Listener {
+  const hold = !!(opts.hold || opts.continuous)
+  let finish: (t: string) => void = () => {}
+  let settled = false
+  const offs: (() => void)[] = []
+  const done = new Promise<string>((resolve, reject) => {
+    finish = (t) => {
+      if (settled) return
+      settled = true
+      offs.forEach((o) => o())
+      resolve(t.trim())
+    }
+    offs.push(onDesktop<string>('stt:partial', (t) => opts.onInterim?.(t)))
+    offs.push(
+      onDesktop<string>('stt:done', (t) => {
+        if (hold) return
+        void invoke('stt_cancel')
+        finish(t)
+      }),
+    )
+    invoke('stt_start', { lang: speechLang(), hold }).catch((e) => {
+      if (settled) return
+      settled = true
+      offs.forEach((o) => o())
+      reject(new Error(String(e)))
+    })
+  })
+  return {
+    done,
+    stop: async () => {
+      const t = (await invoke<string>('stt_stop').catch(() => '')) ?? ''
+      finish(t)
+      return done
+    },
+    cancel: () => {
+      void invoke('stt_cancel')
+      finish('')
     },
   }
 }
