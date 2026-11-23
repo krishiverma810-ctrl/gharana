@@ -1,5 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "regions": [
+    "syd1"
+  ],
   "functions": {
     "api/alfred.ts": {
       "maxDuration": 60
