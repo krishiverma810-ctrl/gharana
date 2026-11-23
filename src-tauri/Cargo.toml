@@ -21,6 +21,7 @@ serde_json = "1"
 
 [target.'cfg(windows)'.dependencies]
 # Native speech-to-text (WebView2's browser speech API doesn't work).
+windows-future = "0.3"
 windows = { version = "0.62", features = ["Media_SpeechRecognition", "Globalization", "Foundation", "Foundation_Collections", "Win32_System_Com"] }
 
 [profile.release]

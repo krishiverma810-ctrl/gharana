@@ -1351,6 +1351,7 @@ dependencies = [
  "tauri-plugin-global-shortcut",
  "tauri-plugin-single-instance",
  "windows",
+ "windows-future",
 ]
 
 [[package]]

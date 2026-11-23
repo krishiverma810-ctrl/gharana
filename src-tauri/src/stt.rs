@@ -13,7 +13,8 @@ use std::sync::{mpsc, Arc, Mutex};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 use windows::core::Ref;
-use windows::Foundation::{AsyncStatus, IAsyncAction, IAsyncOperation, TimeSpan, TypedEventHandler};
+use windows::Foundation::{TimeSpan, TypedEventHandler};
+use windows_future::{AsyncStatus, IAsyncAction, IAsyncOperation};
 use windows::Globalization::Language;
 use windows::Media::SpeechRecognition::{
     SpeechContinuousRecognitionCompletedEventArgs, SpeechContinuousRecognitionResultGeneratedEventArgs,
