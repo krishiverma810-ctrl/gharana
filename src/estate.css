@@ -288,3 +288,24 @@ html.overlay-mode, html.overlay-mode body { background: transparent !important; 
 .overlay-btn { width: 30px; height: 30px; font-size: 14px; color: var(--ink-muted); border: 1px solid var(--line); border-radius: 8px; }
 .overlay-btn.on, .overlay-btn:hover { color: var(--accent); border-color: var(--accent); }
 .pulse { animation: diya 1s infinite; }
+
+/* ══ PHASE 3 — BOARDROOM + LIBRARY ══════════════════════════════════ */
+.kanban { display: grid; grid-template-columns: repeat(4, minmax(220px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 6px; scroll-snap-type: x mandatory; }
+@media (max-width: 899px) { .kanban { grid-template-columns: repeat(4, 78vw); } }
+.kanban-col { scroll-snap-align: start; display: flex; flex-direction: column; gap: 8px; min-height: 160px; padding: 10px; background: color-mix(in srgb, var(--night) 75%, transparent); border: 1px solid var(--line); }
+.kanban-col.droppable { border-style: dashed; }
+.kanban-head { display: flex; justify-content: space-between; font-family: var(--font-deco); font-size: 11px; letter-spacing: 0.25em; color: var(--accent); padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.deal { padding: 10px; background: color-mix(in srgb, var(--night) 92%, #111); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); cursor: grab; }
+.deal.won { border-color: var(--accent); background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 22%, var(--night)), var(--night)); }
+.plaques { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.plaque { padding: 12px 10px; text-align: center; color: #2a1f08; background: linear-gradient(160deg, #f6dc8a, #d4af37 45%, #9a7a22); border: 1px solid #fff3c4; outline: 1px solid #9a7a22; outline-offset: 3px; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45); }
+.media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.media-tile, .media-add { position: relative; aspect-ratio: 1; overflow: hidden; border: 1px solid var(--line); }
+.media-tile img { width: 100%; height: 100%; object-fit: cover; }
+.media-tile span { position: absolute; left: 0; right: 0; bottom: 0; padding: 2px 4px; font-family: var(--font-body); font-size: 11px; color: #fff; background: rgba(0, 0, 0, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.media-add { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--accent); border-style: dashed; font-family: var(--font-deco); font-size: 10px; letter-spacing: 0.2em; }
+.flashcard { padding: 22px 18px; min-height: 180px; cursor: pointer; text-align: center; background: color-mix(in srgb, var(--night) 88%, #111); border: 1px solid var(--accent); outline: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); outline-offset: 5px; }
+.status-pill { flex: none; padding: 2px 8px; font-family: var(--font-deco); font-size: 9.5px; letter-spacing: 0.12em; border: 1px solid var(--line); color: var(--ink-muted); }
+.status-pill.s-offer, .status-pill.s-accepted, .status-pill.s-live, .status-pill.s-delivered, .status-pill.s-posted { color: #7fc48a; border-color: #7fc48a; }
+.status-pill.s-interview, .status-pill.s-review, .status-pill.s-production, .status-pill.s-ready, .status-pill.s-filmed { color: var(--accent); border-color: var(--accent); }
+.status-pill.s-rejected, .status-pill.s-ghosted, .status-pill.s-sold-out { color: #e88a74; border-color: #e88a74; }

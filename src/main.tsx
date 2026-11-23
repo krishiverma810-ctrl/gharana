@@ -10,6 +10,7 @@ import '@fontsource/cormorant-garamond/latin-600.css'
 import '@fontsource/jetbrains-mono/latin-400.css' // numbers: clear l vs 1 vs I
 import '@fontsource/jetbrains-mono/latin-600.css'
 import '@fontsource/noto-serif-devanagari/devanagari-400.css' // Sanskrit / Hindi
+import '@fontsource/noto-sans-gurmukhi/gurmukhi-400.css' // Punjabi
 import './index.css'
 import './estate.css'
 

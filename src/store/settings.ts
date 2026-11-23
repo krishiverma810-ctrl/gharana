@@ -56,6 +56,8 @@ export interface Settings {
   orbY: number
   /** Push a day snapshot to the server so Siri knows your day. */
   siriSnapshot: boolean
+  /** Dental Wing GPA target (7-point). */
+  gpaTarget: number
 }
 
 export type AlfredMode = 'butler' | 'coach' | 'tutor' | 'strategist' | 'mate' | 'calm'
@@ -100,6 +102,7 @@ export const DEFAULT_SETTINGS: Settings = {
   orbSide: 'right',
   orbY: 0.72,
   siriSnapshot: true,
+  gpaTarget: 6.5,
 }
 
 interface SettingsStore extends Settings {

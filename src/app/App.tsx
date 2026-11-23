@@ -26,6 +26,8 @@ import { CalendarRoom } from '../rooms/Calendar'
 import { Wildcard } from '../rooms/Wildcard'
 import { Alfred } from '../rooms/Alfred'
 import { DeepaliCorner, FamilyRoom } from '../rooms/Mehfil2'
+import { AppLab, Closer, JobDesk, KSStudio, MpaDesk, NazaraHQ } from '../rooms/Boardroom'
+import { DentalWing, ReadingRoom, SkillsForge, Study } from '../rooms/Library'
 import { Captions, Orb, useVoiceHotkeys } from '../components/VoiceUI'
 import { useReminders } from '../store/reminders'
 import { startWakeIfEnabled, stopWakeWord, useVoice } from '../store/voice'
@@ -52,6 +54,16 @@ const ROOM_COMPONENTS: Record<string, ComponentType> = {
   alfred: Alfred,
   family: FamilyRoom,
   deepali: DeepaliCorner,
+  closer: Closer,
+  nazara: NazaraHQ,
+  ksvol1: KSStudio,
+  applab: AppLab,
+  jobs: JobDesk,
+  mpa: MpaDesk,
+  study: Study,
+  dental: DentalWing,
+  reading: ReadingRoom,
+  forge: SkillsForge,
 }
 
 type Shell = 'phone' | 'desktop'

@@ -1,6 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type {
-  Backup, Capture, ChatRecord, DayLog, FocusSession, Goal, Habit, HabitLog, Item, LiftSet, Shift, Template, Trip, Txn, Wish, Workout,
+  Backup, Book, Capture, Card, ChatRecord, Deal, Media, Session, Unit, DayLog, FocusSession, Goal, Habit, HabitLog, Item, LiftSet, Shift, Template, Trip, Txn, Wish, Workout,
 } from './types'
 
 // GHARANA's on-device database (IndexedDB via Dexie). Everything saves here instantly
@@ -19,6 +19,7 @@ export const MIGRATIONS = [
   { version: 1, date: '2026-11-22', note: 'Phase 0 — kv + daily water log' },
   { version: 2, date: '2026-11-22', note: 'Phase 1 — habits, blueprint, patrol, vault, captures, backups' },
   { version: 3, date: '2026-11-23', note: 'Phase 2 — trips, shared lists, ALFRED chats' },
+  { version: 4, date: '2026-11-23', note: 'Phase 3 — deals, flashcards, units, books, sessions, media' },
 ]
 
 export class GharanaDB extends Dexie {
@@ -39,6 +40,12 @@ export class GharanaDB extends Dexie {
   trips!: EntityTable<Trip, 'id'>
   items!: EntityTable<Item, 'id'>
   chats!: EntityTable<ChatRecord, 'id'>
+  deals!: EntityTable<Deal, 'id'>
+  cards!: EntityTable<Card, 'id'>
+  units!: EntityTable<Unit, 'id'>
+  books!: EntityTable<Book, 'id'>
+  sessions!: EntityTable<Session, 'id'>
+  media!: EntityTable<Media, 'id'>
 
   constructor() {
     super('gharana')
@@ -88,6 +95,31 @@ export class GharanaDB extends Dexie {
       trips: 'id, start',
       items: 'id, [room+kind], date',
       chats: 'id, day',
+    })
+    this.version(4).stores({
+      kv: 'key',
+      days: 'day',
+      habits: 'id, order',
+      habitLogs: 'id, habitId, day',
+      templates: 'id, order',
+      shifts: 'id, day',
+      focus: 'id, day',
+      workouts: 'id, day, type',
+      lifts: 'id, day, lift',
+      goals: 'id, order',
+      txns: 'id, day, kind, goalId',
+      wishes: 'id',
+      captures: 'id, dest, at',
+      backups: '++id, at',
+      trips: 'id, start',
+      items: 'id, [room+kind], date',
+      chats: 'id, day',
+      deals: 'id, stage, order',
+      cards: 'id, deck, due',
+      units: 'id, sem, order',
+      books: 'id, status',
+      sessions: 'id, day, kind, [kind+subject]',
+      media: 'id, [room+kind], at',
     })
   }
 }

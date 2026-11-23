@@ -228,6 +228,8 @@ export interface Item {
   done?: boolean
   num?: number
   tags?: string[]
+  /** Extra structured fields for richer lists (job applications, posts, orders…). */
+  meta?: Record<string, string | number | boolean | undefined>
   at: number
 }
 
@@ -239,4 +241,94 @@ export interface ChatRecord {
   /** tool_use id → what ALFRED did, shown as an action chip. */
   chips: Record<string, string>
   updatedAt: number
+}
+
+// ── Phase 3 ──────────────────────────────────────────────────────────
+
+export type DealStage = 'radar' | 'table' | 'closing' | 'won' | 'lost'
+
+/** THE CLOSER — any goal you're trying to close. */
+export interface Deal {
+  id: string
+  title: string
+  category: string
+  stage: DealStage
+  due?: string
+  value?: number
+  notes?: string
+  order: number
+  createdAt: number
+  closedAt?: number
+}
+
+/** Retrieval-practice flashcard (SM-2 spaced repetition). */
+export interface Card {
+  id: string
+  deck: string
+  front: string
+  back: string
+  ease: number
+  interval: number // days
+  reps: number
+  lapses: number
+  due: string // YYYY-MM-DD
+  createdAt: number
+}
+
+export interface Assessment {
+  id: string
+  name: string
+  weight: number // %
+  due?: string
+  mark?: number // %
+}
+
+/** A uni unit (Monash: 6 credit points each). */
+export interface Unit {
+  id: string
+  code: string
+  name: string
+  sem: string // e.g. "2026 S2"
+  level: number // 1 = first-year (half weight in WAM)
+  credits: number
+  assessments: Assessment[]
+  finalMark?: number
+  order: number
+}
+
+export interface Book {
+  id: string
+  title: string
+  author: string
+  status: 'reading' | 'toread' | 'done'
+  pages: number
+  pageAt: number
+  quotes: { id: string; text: string; page?: number }[]
+  startedAt?: string
+  finishedAt?: string
+  at: number
+}
+
+/** Time logged on anything: study, skills, keyboard, reading pages, driving hours… */
+export interface Session {
+  id: string
+  day: string
+  kind: string // 'study' | 'skill' | 'reading' | 'driving' | 'gamsat' …
+  subject: string
+  minutes: number
+  rating?: number // focus 1–5
+  num?: number // pages read, score…
+  notes?: string
+  night?: boolean
+  at: number
+}
+
+/** Images (design boards, moodboards, cooking photos, posters). Stored as small JPEG data URLs. */
+export interface Media {
+  id: string
+  room: string
+  kind: string
+  data: string
+  caption?: string
+  at: number
 }

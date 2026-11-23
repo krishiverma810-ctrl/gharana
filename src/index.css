@@ -18,7 +18,7 @@
   --font-deco: 'Poiret One', 'Josefin Sans', sans-serif;
   --font-body: 'Cormorant Garamond', 'Noto Serif Devanagari', Georgia, serif;
   --font-num: 'JetBrains Mono', ui-monospace, monospace;
-  --font-sanskrit: 'Noto Serif Devanagari', serif;
+  --font-sanskrit: 'Noto Serif Devanagari', 'Noto Sans Gurmukhi', serif;
 }
 
 html,

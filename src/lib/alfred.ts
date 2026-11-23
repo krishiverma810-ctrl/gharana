@@ -127,6 +127,11 @@ export async function buildSnapshot(channel: Channel = 'chat'): Promise<string> 
     db.days.get(addDays(today, -1)),
   ])
   const memories = await db.items.where('[room+kind]').equals(['alfred', 'memory']).toArray()
+  const [dealsOpen, cardsDue, units] = await Promise.all([
+    db.deals.where('stage').anyOf(['radar', 'table', 'closing']).toArray(),
+    db.cards.where('due').belowOrEqual(today).count(),
+    db.units.toArray(),
+  ])
   const habits = habitsAll.filter((h) => !h.archived && h.sets.includes(habitSet))
   const logsByHabit = new Map<string, HabitLog[]>()
   for (const l of logsAll) logsByHabit.set(l.habitId, [...(logsByHabit.get(l.habitId) ?? []), l])
@@ -172,6 +177,9 @@ export async function buildSnapshot(channel: Channel = 'chat'): Promise<string> 
     const packed = upcoming.packing.filter((p) => p.done).length
     lines.push(`NEXT TRIP: ${upcoming.name} ${upcoming.start}→${upcoming.end}; packing ${packed}/${upcoming.packing.length}.`)
   }
+  if (dealsOpen.length) lines.push(`DEALS IN PLAY (The Closer): ${dealsOpen.slice(0, 8).map((d) => `${d.title} [${d.stage}${d.due ? `, due ${d.due}` : ''}]`).join('; ')}.`)
+  const nextDue = units.flatMap((u) => u.assessments.filter((a) => a.due && a.due >= today && a.mark == null).map((a) => ({ u, a }))).sort((x, y) => (x.a.due ?? '').localeCompare(y.a.due ?? ''))[0]
+  lines.push(`STUDY: ${cardsDue} flashcards due${nextDue ? `; next deadline ${nextDue.u.code} ${nextDue.a.name} (${nextDue.a.weight}%) on ${nextDue.a.due}` : ''}.`)
   const mission = wildcard.find((w) => w.date === today)
   if (mission) lines.push(`WILDCARD MISSION today: ${mission.text}`)
   const y = yesterday?.night
@@ -536,4 +544,11 @@ export async function pushSnapshotForSiri(force = false) {
   } catch {
     /* offline — next time */
   }
+}
+
+/** Ask ALFRED a single question outside the daily chat (graders, idea generators…). Returns his reply. */
+export async function askOnce(prompt: string): Promise<string> {
+  await checkBudget()
+  const { messages } = await loop([{ role: 'user', content: prompt }, { role: 'system', content: await buildSnapshot() }], {})
+  return lastReply({ id: 'once', day: '', messages, chips: {}, updatedAt: 0 })
 }

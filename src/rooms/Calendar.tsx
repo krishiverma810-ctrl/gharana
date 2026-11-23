@@ -19,7 +19,7 @@ interface CalEvent {
   date: string
   end?: string
   title: string
-  kind: 'event' | 'family' | 'special' | 'trip' | 'flight' | 'shift' | 'phase'
+  kind: 'event' | 'family' | 'special' | 'trip' | 'flight' | 'shift' | 'phase' | 'study' | 'deal'
   yearly?: boolean
 }
 
@@ -27,6 +27,8 @@ function useAllEvents(phases: LockInPhase[]): CalEvent[] {
   const items = useLiveQuery(() => db.items.where('date').above('').toArray(), []) ?? []
   const trips = useLiveQuery(() => db.trips.toArray(), []) ?? []
   const shifts = useLiveQuery(() => db.shifts.toArray(), []) ?? []
+  const units = useLiveQuery(() => db.units.toArray(), []) ?? []
+  const deals = useLiveQuery(() => db.deals.toArray(), []) ?? []
   return useMemo(() => {
     const ev: CalEvent[] = []
     for (const it of items) {
@@ -40,9 +42,11 @@ function useAllEvents(phases: LockInPhase[]): CalEvent[] {
       for (const f of t.flights) ev.push({ date: f.date, title: `✈ ${f.number || f.label} ${f.from}→${f.to} ${f.time}`, kind: 'flight' })
     }
     for (const s of shifts) ev.push({ date: s.day, title: `GYG ${s.start}–${s.end}`, kind: 'shift' })
+    for (const u of units) for (const a of u.assessments) if (a.due) ev.push({ date: a.due, title: `📚 ${u.code} ${a.name} (${a.weight}%)`, kind: 'study' })
+    for (const d of deals) if (d.due && d.stage !== 'won' && d.stage !== 'lost') ev.push({ date: d.due, title: `★ ${d.title}`, kind: 'deal' })
     phases.forEach((p) => ev.push({ date: p.start, end: p.end, title: `Phase ${p.numeral}: ${p.name}`, kind: 'phase' }))
     return ev
-  }, [items, trips, shifts, phases])
+  }, [items, trips, shifts, phases, units, deals])
 }
 
 /** Does this event land on `day`? (Handles multi-day ranges and yearly dates.) */
@@ -117,7 +121,7 @@ export function CalendarRoom() {
   const phaseOf = (d: string) => phases.findIndex((p) => d >= p.start && d <= p.end)
 
   const countdowns = events
-    .filter((e) => ['event', 'family', 'special', 'trip', 'flight'].includes(e.kind) || (e.kind === 'phase'))
+    .filter((e) => ['event', 'family', 'special', 'trip', 'flight', 'study', 'deal'].includes(e.kind) || e.kind === 'phase')
     .map((e) => ({ e, when: nextOccurrence(e, today) }))
     .filter((x) => x.when >= today)
     .sort((a, b) => a.when.localeCompare(b.when))

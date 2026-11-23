@@ -1,6 +1,8 @@
 import { db } from './db'
 import { DEFAULT_GOALS, DEFAULT_HABITS, DEFAULT_TEMPLATES } from '../config/defaults'
 import { DEFAULT_TRIPS } from '../config/travel'
+import { SEED_LISTS } from '../config/library'
+import { uid } from './db'
 
 // Seeds starting data once. Each seed step has its own flag so later phases
 // can add new seed steps without re-seeding (or overwriting) anything you edited.
@@ -27,6 +29,20 @@ const SEED_STEPS: { key: string; run: () => Promise<void> }[] = [
     key: 'seed:p2-trips',
     run: async () => {
       if ((await db.trips.count()) === 0) await db.trips.bulkPut(DEFAULT_TRIPS)
+    },
+  },
+  {
+    key: 'seed:p3-lists',
+    run: async () => {
+      let t = Date.now()
+      for (const list of SEED_LISTS) {
+        const existing = await db.items.where('[room+kind]').equals([list.room, list.kind]).count()
+        if (existing) continue
+        await db.items.bulkAdd(list.items.map((text) => ({ id: uid(), room: list.room, kind: list.kind, text, done: false, at: t++ })))
+      }
+      if (!(await db.items.where('[room+kind]').equals(['forge', 'skill']).count())) {
+        await db.items.bulkAdd(['Keyboard', 'Cooking', 'Boxing', 'Design'].map((text) => ({ id: uid(), room: 'forge', kind: 'skill', text, at: t++ })))
+      }
     },
   },
 ]

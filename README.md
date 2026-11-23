@@ -11,7 +11,9 @@ The full spec is in [`GHARANA_v3_BUILD_PROMPT.md`](GHARANA_v3_BUILD_PROMPT.md). 
 - [x] **Phase 1** — Core Estate: phone + PC shells, Corridor, command palette, Lounge, Daily Rites, Morning Rite, Night Debrief, Blueprint (+ focus timer, shifts), Patrol (+ PR vault, boxing rounds), Vault, Settings (phases, Travel Mode, rooms, data)
 - [x] **Phase 2** — Travel-ready: Concierge (trips, flights, packing, docs, shared costs, jet lag, re-entry), Gold Coast + India skyline skins, 7 new palettes, Family Room, Deepali’s Corner, Wildcard (308 missions), Calendar (+ .ics), ALFRED on Vercel (tools, photos, modes, DELULU, spend cap, offline queue)
 - [x] **Phase 2.5a** — Voice: Gold Orb (hold / tap / double-tap / drag), conversation mode, captions, 25+ offline voice commands, spoken replies (device or premium), desktop dock + Right-Alt hold-to-talk, Memory Bank, reminders, Siri bridge (`kind: siri | quick`, Upstash queue), morning briefing
-- [ ] 2.5b — Windows desktop app (Tauri): system-wide hotkey, tray, overlay · [ ] 3 — Boardroom + Library · [ ] 4 — Full House · [ ] 5 — Polish
+- [x] **Phase 2.5b** — Windows desktop app (Tauri, `src-tauri/`): system-wide hotkeys (rebindable), always-on-top ALFRED bar, tray, close-to-tray, launch on startup, native Windows speech recognition. Build: `npx tauri build` → `src-tauri/target/release/bundle/nsis/`
+- [x] **Phase 3** — Boardroom + Library: Closer (kanban + Wins Wall + daily tactic), NAZARA HQ, K.S. VOL. 1 Studio (growth chart), App Lab (feature requests → Claude Code), Job Desk (+ P-licence logbook), MPA Desk, Study (units, WAM/GPA, SM-2 flashcards, explain-it-back), Dental Wing (GAMSAT, experience, interview practice), Reading Room, Skills Forge (20/100-hour milestones, language corner)
+- [ ] Phase 4 — Full House · [ ] Phase 5 — Polish
 
 ## Run it
 ```bash
