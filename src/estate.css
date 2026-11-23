@@ -273,3 +273,18 @@ input[type="time"].deco-input, input[type="date"].deco-input { color-scheme: dar
 @media (max-width: 1200px) { .dock { width: 280px; } }
 
 .code-chip { display: inline; padding: 1px 6px; font-family: var(--font-num); font-size: 12.5px; color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); border: 1px dashed color-mix(in srgb, var(--accent) 50%, transparent); word-break: break-all; text-align: left; }
+
+/* ══ PHASE 2.5b — WINDOWS OVERLAY ═══════════════════════════════════ */
+html.overlay-mode, html.overlay-mode body { background: transparent !important; overflow: hidden; }
+.overlay-bar { position: fixed; inset: 10px; display: flex; align-items: center; gap: 14px; padding: 14px 16px; color: var(--ink); background: color-mix(in srgb, var(--night) 94%, #111); border: 1px solid var(--accent); outline: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); outline-offset: 4px; border-radius: 16px; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6); }
+.overlay-wave { position: relative; display: grid; place-items: center; width: 62px; height: 62px; flex: none; border-radius: 50%; color: var(--night); background: radial-gradient(circle at 35% 30%, #fff3c4, var(--accent) 50%, color-mix(in srgb, var(--accent) 60%, #000)); }
+.overlay-wave::before { content: ""; position: absolute; inset: -9px; border-radius: 50%; background: repeating-conic-gradient(color-mix(in srgb, var(--accent) 60%, transparent) 0 4deg, transparent 4deg 15deg); mask-image: radial-gradient(circle, transparent 55%, black 57%, transparent 72%); -webkit-mask-image: radial-gradient(circle, transparent 55%, black 57%, transparent 72%); opacity: 0.35; }
+.overlay-wave.listening::before { opacity: 1; animation: spin 5s linear infinite; }
+.overlay-wave.listening { box-shadow: 0 0 26px var(--accent); animation: orb-pulse 1s ease-in-out infinite; }
+.overlay-wave.thinking::before { opacity: 0.8; animation: spin 2s linear infinite; }
+.overlay-wave.speaking::before { opacity: 1; animation: orb-wave 0.6s ease-in-out infinite alternate, spin 10s linear infinite; }
+.overlay-text { margin-top: 4px; font-family: var(--font-body); font-size: 18px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.overlay-input { width: 100%; margin-top: 6px; padding: 6px 0; font-family: var(--font-body); font-size: 18px; color: var(--ink); background: transparent; border: 0; border-bottom: 1px solid var(--accent); outline: none; }
+.overlay-btn { width: 30px; height: 30px; font-size: 14px; color: var(--ink-muted); border: 1px solid var(--line); border-radius: 8px; }
+.overlay-btn.on, .overlay-btn:hover { color: var(--accent); border-color: var(--accent); }
+.pulse { animation: diya 1s infinite; }

@@ -1,0 +1,26 @@
+[package]
+name = "gharana"
+version = "3.0.0"
+description = "GHARANA — The Estate. Desktop shell with a system-wide ALFRED hotkey."
+edition = "2021"
+
+[lib]
+name = "gharana_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-single-instance = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

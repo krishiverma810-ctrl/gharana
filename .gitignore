@@ -16,3 +16,4 @@ Thumbs.db
 *.log
 .vscode/*
 !.vscode/extensions.json
+src-tauri/gen/

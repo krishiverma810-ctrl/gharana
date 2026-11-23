@@ -12,6 +12,8 @@ import { PALETTES } from '../theme/palettes'
 import { ROOMS, isOpen } from '../config/rooms'
 import { LOCATIONS, type LocationId, type LockInPhase } from '../config/lockin'
 import { SiriSettings, VoiceSettings } from './VoiceSettings'
+import { DesktopSettings } from './DesktopSettings'
+import { isDesktop } from '../lib/desktop'
 import { alfredStatus, getHouseKey, getUsage, setHouseKey, type Usage } from '../lib/alfred'
 
 // SETTINGS — the Engine Room controls.
@@ -329,6 +331,7 @@ export function SettingsRoom() {
           <div id="alfred"><DecoCard title="ALFRED"><AlfredSettings /></DecoCard></div>
           <div id="voice"><DecoCard title="VOICE"><VoiceSettings /></DecoCard></div>
           <div id="siri"><DecoCard title="SIRI + SHORTCUTS"><SiriSettings /></DecoCard></div>
+          {isDesktop() && <div id="desktop"><DecoCard title="DESKTOP HOTKEYS"><DesktopSettings /></DecoCard></div>}
           <DecoCard title="ROOMS"><RoomManager /></DecoCard>
           <DecoCard title="YOUR DATA"><DataRoom /></DecoCard>
           <p className="text-center font-deco text-[10px] tracking-[0.35em] text-[var(--ink-muted)]">GHARANA v3 · PHASE 1 · THE CORE ESTATE</p>

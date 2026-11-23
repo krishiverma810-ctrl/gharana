@@ -1,0 +1,56 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "GHARANA",
+  "version": "3.0.0",
+  "identifier": "app.gharana.estate",
+  "build": {
+    "frontendDist": "https://gharana-blue.vercel.app"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "GHARANA — The Estate",
+        "url": "/",
+        "width": 1440,
+        "height": 920,
+        "minWidth": 900,
+        "minHeight": 620,
+        "center": true,
+        "backgroundColor": "#0b0a08"
+      },
+      {
+        "label": "overlay",
+        "title": "ALFRED",
+        "url": "/overlay",
+        "width": 620,
+        "height": 190,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "resizable": false,
+        "visible": false,
+        "focus": false,
+        "shadow": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "publisher": "Krishi",
+    "shortDescription": "GHARANA — The house builds the name.",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico", "icons/icon.png"],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
+  },
+  "plugins": {}
+}

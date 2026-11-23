@@ -1,0 +1,13 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "GHARANA windows may use events, window controls and autostart. Remote access is limited to the GHARANA site.",
+  "windows": ["main", "overlay"],
+  "remote": { "urls": ["https://gharana-blue.vercel.app/*"] },
+  "permissions": [
+    "core:default",
+    "core:event:default",
+    "core:window:default",
+    "autostart:default"
+  ]
+}

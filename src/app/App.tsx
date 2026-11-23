@@ -31,6 +31,11 @@ import { useReminders } from '../store/reminders'
 import { startWakeIfEnabled, stopWakeWord, useVoice } from '../store/voice'
 import { pullSiriQueue, pushSnapshotForSiri } from '../lib/alfred'
 import { speak } from '../lib/voice'
+import { Overlay } from './Overlay'
+import { invoke, isDesktop, onDesktop } from '../lib/desktop'
+import { navigate } from './router'
+import { addWater, db } from '../db/db'
+import { toast } from '../store/ui'
 
 const ROOM_COMPONENTS: Record<string, ComponentType> = {
   lounge: Lounge,
@@ -84,6 +89,9 @@ export function App() {
     window.addEventListener('pointerdown', prime, { once: true })
   }, [])
 
+  // The Windows app's always-on-top ALFRED bar.
+  if (location.pathname === '/overlay') return loaded && ready ? <Overlay /> : null
+
   return (
     <>
       <Splash />
@@ -129,6 +137,31 @@ function Estate() {
       document.removeEventListener('visibilitychange', sync)
     }
   }, [])
+
+  // Windows app: tray actions, "open this room" requests, and a live tray tooltip.
+  useEffect(() => {
+    if (!isDesktop()) return
+    const offA = onDesktop<string>('tray:action', (a) => {
+      if (a === 'water') void addWater(house.today, 250).then(() => toast('+250 ml water (from the tray)'))
+      if (a === 'focus') {
+        useFocus.getState().start(25)
+        navigate('/blueprint')
+      }
+    })
+    const offN = onDesktop<string>('navigate', (p) => navigate(p))
+    const push = async () => {
+      const d = await db.days.get(house.today)
+      const s = useSettings.getState()
+      void invoke('set_tray_summary', { text: `Water ${((d?.waterMl ?? 0) / 1000).toFixed(1)}/${s.waterTargetMl / 1000} L · Protein ${d?.proteinG ?? 0}/${s.proteinTargetG} g` })
+    }
+    void push()
+    const t = setInterval(push, 60_000)
+    return () => {
+      offA()
+      offN()
+      clearInterval(t)
+    }
+  }, [house.today])
 
   // In-app wake word (experimental).
   useEffect(() => {
