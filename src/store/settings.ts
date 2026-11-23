@@ -33,7 +33,18 @@ export interface Settings {
   inrPerAud: number
   focusPresets: number[]
   lastExportAt: number | null
+  /** Phase 2: swap to the Gold Coast / India skyline when travelling. */
+  locationSkin: boolean
+  alfredMode: AlfredMode
+  delulu: boolean
+  alfredLang: 'english' | 'hindi' | 'punjabi' | 'hinglish'
+  /** Monthly ALFRED budget in AUD — sending stops at the cap. */
+  alfredCapAud: number
+  usdToAud: number
+  deepaliName: string
 }
+
+export type AlfredMode = 'butler' | 'coach' | 'tutor' | 'strategist' | 'mate' | 'calm'
 
 export const DEFAULT_SETTINGS: Settings = {
   name: 'Krishi',
@@ -57,6 +68,13 @@ export const DEFAULT_SETTINGS: Settings = {
   inrPerAud: 55,
   focusPresets: [25, 50, 90],
   lastExportAt: null,
+  locationSkin: true,
+  alfredMode: 'butler',
+  delulu: true,
+  alfredLang: 'english',
+  alfredCapAud: 10,
+  usdToAud: 1.55,
+  deepaliName: 'Deepali',
 }
 
 interface SettingsStore extends Settings {

@@ -21,6 +21,11 @@ import { Patrol } from '../rooms/Patrol'
 import { Vault } from '../rooms/Vault'
 import { SettingsRoom } from '../rooms/Settings'
 import { ComingSoon, Corridor } from '../rooms/Corridor'
+import { Concierge } from '../rooms/Concierge'
+import { CalendarRoom } from '../rooms/Calendar'
+import { Wildcard } from '../rooms/Wildcard'
+import { Alfred } from '../rooms/Alfred'
+import { DeepaliCorner, FamilyRoom } from '../rooms/Mehfil2'
 
 const ROOM_COMPONENTS: Record<string, ComponentType> = {
   lounge: Lounge,
@@ -31,6 +36,12 @@ const ROOM_COMPONENTS: Record<string, ComponentType> = {
   patrol: Patrol,
   vault: Vault,
   settings: SettingsRoom,
+  concierge: Concierge,
+  calendar: CalendarRoom,
+  wildcard: Wildcard,
+  alfred: Alfred,
+  family: FamilyRoom,
+  deepali: DeepaliCorner,
 }
 
 type Shell = 'phone' | 'desktop'
@@ -107,7 +118,7 @@ function Estate() {
 
   return (
     <div className="relative min-h-dvh" style={room ? { ['--room' as string]: room.accent } : undefined}>
-      <Skyline palette={house.palette} tod={house.tod} still={reduced || battery} layers={shell === 'phone' ? 2 : 3} />
+      <Skyline palette={house.palette} tod={house.tod} still={reduced || battery} layers={shell === "phone" ? 2 : 3} skin={house.skin} />
       <div className="skyline-veil" />
       <Shell>
         <AnimatePresence mode="wait">

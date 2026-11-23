@@ -4,7 +4,7 @@ import { useUI, toast } from '../store/ui'
 import { useSettings } from '../store/settings'
 import { useFocus } from '../store/focus'
 import { navigate } from './router'
-import { ROOMS } from '../config/rooms'
+import { ROOMS, isOpen } from '../config/rooms'
 import { Icon } from '../components/Icon'
 import { addProtein, addWater, db, uid } from '../db/db'
 import { useActiveHabits, useLogsForDay, setHabitValue } from '../db/hooks'
@@ -80,7 +80,7 @@ export function CommandPalette() {
       ...ROOMS.filter((r) => !hidden.includes(r.id)).map((r) => ({
         id: `r-${r.id}`,
         label: names[r.id] || r.name,
-        hint: r.phase > 1 ? `Phase ${r.phase}` : r.blurb,
+        hint: !isOpen(r) ? `Phase ${r.phase}` : r.blurb,
         icon: r.icon,
         run: () => navigate(r.path),
       })),

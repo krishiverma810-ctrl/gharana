@@ -1,6 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type {
-  Backup, Capture, DayLog, FocusSession, Goal, Habit, HabitLog, LiftSet, Shift, Template, Txn, Wish, Workout,
+  Backup, Capture, ChatRecord, DayLog, FocusSession, Goal, Habit, HabitLog, Item, LiftSet, Shift, Template, Trip, Txn, Wish, Workout,
 } from './types'
 
 // GHARANA's on-device database (IndexedDB via Dexie). Everything saves here instantly
@@ -18,6 +18,7 @@ export interface KV {
 export const MIGRATIONS = [
   { version: 1, date: '2026-11-22', note: 'Phase 0 — kv + daily water log' },
   { version: 2, date: '2026-11-22', note: 'Phase 1 — habits, blueprint, patrol, vault, captures, backups' },
+  { version: 3, date: '2026-11-23', note: 'Phase 2 — trips, shared lists, ALFRED chats' },
 ]
 
 export class GharanaDB extends Dexie {
@@ -35,6 +36,9 @@ export class GharanaDB extends Dexie {
   wishes!: EntityTable<Wish, 'id'>
   captures!: EntityTable<Capture, 'id'>
   backups!: EntityTable<Backup, 'id'>
+  trips!: EntityTable<Trip, 'id'>
+  items!: EntityTable<Item, 'id'>
+  chats!: EntityTable<ChatRecord, 'id'>
 
   constructor() {
     super('gharana')
@@ -66,6 +70,25 @@ export class GharanaDB extends Dexie {
           d.updatedAt ??= Date.now()
         })
       })
+    this.version(3).stores({
+      kv: 'key',
+      days: 'day',
+      habits: 'id, order',
+      habitLogs: 'id, habitId, day',
+      templates: 'id, order',
+      shifts: 'id, day',
+      focus: 'id, day',
+      workouts: 'id, day, type',
+      lifts: 'id, day, lift',
+      goals: 'id, order',
+      txns: 'id, day, kind, goalId',
+      wishes: 'id',
+      captures: 'id, dest, at',
+      backups: '++id, at',
+      trips: 'id, start',
+      items: 'id, [room+kind], date',
+      chats: 'id, day',
+    })
   }
 }
 

@@ -30,7 +30,7 @@ const TYPES: { value: WorkoutType; label: string }[] = [
 ]
 
 /** Logging a session also ticks the matching habit (boxing → Boxing, gym/sport → Sport / Gym, anything → Move 20). */
-async function syncHabits(w: Workout) {
+export async function syncHabits(w: Workout) {
   const habits = await db.habits.toArray()
   const get = (id: string) => habits.find((h) => h.id === id && !h.archived)
   const sameDay = await db.workouts.where('day').equals(w.day).toArray()

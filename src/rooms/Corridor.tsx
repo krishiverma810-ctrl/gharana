@@ -1,4 +1,4 @@
-import { CORRIDOR, ROOMS, WINGS, roomById } from '../config/rooms'
+import { CORRIDOR, ROOMS, WINGS, roomById, isOpen } from '../config/rooms'
 import { useSettings } from '../store/settings'
 import { navigate } from '../app/router'
 import { Icon } from '../components/Icon'
@@ -24,12 +24,12 @@ export function Corridor() {
             </h2>
             <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
               {rooms.map((r) => (
-                <button key={r.id} className={`door ${r.phase > 1 ? 'locked' : ''}`} style={{ ['--room' as string]: r.accent }} onClick={() => navigate(r.path)}>
+                <button key={r.id} className={`door ${!isOpen(r) ? 'locked' : ''}`} style={{ ['--room' as string]: r.accent }} onClick={() => navigate(r.path)}>
                   <span className="door-arch">
-                    <Icon name={r.phase > 1 ? 'lock' : r.icon} size={24} />
+                    <Icon name={!isOpen(r) ? 'lock' : r.icon} size={24} />
                   </span>
                   <span className="door-name">{(names[r.id] || r.name).replace(/^THE /, '')}</span>
-                  {r.phase > 1 && <span className="door-phase">PHASE {r.phase}</span>}
+                  {!isOpen(r) && <span className="door-phase">PHASE {r.phase}</span>}
                 </button>
               ))}
             </div>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Icon } from '../components/Icon'
-import { CORRIDOR, ROOMS, WINGS, roomById } from '../config/rooms'
+import { CORRIDOR, ROOMS, WINGS, roomById, isOpen } from '../config/rooms'
 import { useSettings } from '../store/settings'
 import { useUI } from '../store/ui'
 import { useFocus } from '../store/focus'
@@ -189,13 +189,13 @@ export function DesktopShell({ children }: { children: ReactNode }) {
                   rooms.map((r) => (
                     <button
                       key={r.id}
-                      className={`side-room ${path === r.path ? 'on' : ''} ${r.phase > 1 ? 'locked' : ''}`}
+                      className={`side-room ${path === r.path ? 'on' : ''} ${!isOpen(r) ? 'locked' : ''}`}
                       style={{ ['--room' as string]: r.accent }}
                       onClick={() => navigate(r.path)}
                     >
                       <Icon name={r.icon} size={17} />
                       <span className="flex-1 truncate">{name(r.id)}</span>
-                      {r.phase > 1 && <span className="phase-tag">P{r.phase}</span>}
+                      {!isOpen(r) && <span className="phase-tag">P{r.phase}</span>}
                     </button>
                   ))}
               </div>

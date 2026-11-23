@@ -9,7 +9,8 @@ The full spec is in [`GHARANA_v3_BUILD_PROMPT.md`](GHARANA_v3_BUILD_PROMPT.md). 
 ## Status
 - [x] **Phase 0** — setup, placeholder Lounge, living skyline, 9 palettes, on-device DB, PWA
 - [x] **Phase 1** — Core Estate: phone + PC shells, Corridor, command palette, Lounge, Daily Rites, Morning Rite, Night Debrief, Blueprint (+ focus timer, shifts), Patrol (+ PR vault, boxing rounds), Vault, Settings (phases, Travel Mode, rooms, data)
-- [ ] Phase 2 — Travel-ready · [ ] 2.5 — Voice/JARVIS · [ ] 3 — Boardroom + Library · [ ] 4 — Full House · [ ] 5 — Polish
+- [x] **Phase 2** — Travel-ready: Concierge (trips, flights, packing, docs, shared costs, jet lag, re-entry), Gold Coast + India skyline skins, 7 new palettes, Family Room, Deepali’s Corner, Wildcard (308 missions), Calendar (+ .ics), ALFRED on Vercel (tools, photos, modes, DELULU, spend cap, offline queue)
+- [ ] 2.5 — Voice/JARVIS · [ ] 3 — Boardroom + Library · [ ] 4 — Full House · [ ] 5 — Polish
 
 ## Run it
 ```bash
@@ -27,6 +28,13 @@ Pushing to `main` on GitHub makes Vercel auto-deploy → **https://gharana-blue.
 - Desktop Lounge widgets are a fixed grid; drag/resize/add/remove widgets is Phase 4.
 - The ALFRED orb + docked panel arrive with ALFRED (Phase 2) and voice (Phase 2.5).
 - Scheduled push nudges (water, wind-down) are Phase 4; the focus timer can already notify.
+
+## ALFRED setup (server)
+Vercel → Project → Settings → Environment Variables:
+- `ANTHROPIC_API_KEY` — from console.anthropic.com (set a monthly spend limit there too)
+- `ALFRED_ACCESS_KEY` — a passphrase you choose; enter the same one in the app under Settings → ALFRED
+
+The API key never reaches the phone. The app runs the tool loop locally and sends a short day snapshot with each message. History is append-only (frozen system prompt + per-turn system messages) so thinking blocks stay valid; refusals fall back server-side (`fallbacks: "default"`).
 
 ## Stack
 Vite + React 19 + TypeScript · Tailwind v4 + CSS variables (palette tokens) · Zustand · Dexie (IndexedDB) ·
@@ -47,7 +55,7 @@ src/
   theme/       Palettes (data) + palette-of-the-day logic
   config/      Default seed config (lock-in phases, later habits/quotes/verses…)
   lib/         Utilities (time-zone brain, etc.)
-api/           Vercel serverless functions (ALFRED, Phase 2)
+api/           Vercel serverless functions — alfred.ts (Claude, model claude-opus-5-5)
 legacy/        Old v2 gharana.jsx goes here for reference
 public/        Icons + static files
 scripts/       Dev scripts (icon generator)

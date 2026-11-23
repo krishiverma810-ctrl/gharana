@@ -205,3 +205,24 @@ export const PALETTES: Palette[] = [
     surface: 'rgba(18,15,12,0.72)',
   },
 ]
+
+// ── Phase 2: 7 more daily palettes ──────────────────────────────────
+const mk = (id: string, name: string, sky: Palette['sky'], b: Palette['buildings'], window: string, accent: string, accentSoft: string, ink: string, inkMuted: string, surface: string): Palette => ({
+  id, name, sky, buildings: b, window, star: '#fff6e0', moon: '#fff3d6', searchlight: `${window}26`, accent, accentSoft, ink, inkMuted, surface,
+})
+
+PALETTES.push(
+  mk('saffron-speakeasy', 'SAFFRON SPEAKEASY', { dawn: ['#1a0f08', '#5e3412', '#f0a43a'], day: ['#3a2410', '#8a5a22', '#f2c36a'], dusk: ['#140a06', '#5a2a0e', '#e8822a'], night: ['#060302', '#120905', '#26140a'] }, ['#2a170a', '#1c0f06', '#0e0703'], '#ffb347', '#f2a93b', '#8a5a22', '#fff1df', '#d2ad86', 'rgba(14,7,3,0.74)'),
+  mk('crimson-marquee', 'CRIMSON MARQUEE', { dawn: ['#1a0608', '#5a141c', '#e0784a'], day: ['#3a0c12', '#7a2028', '#e8a07a'], dusk: ['#12040a', '#4a0c1c', '#c83a2a'], night: ['#060103', '#12040a', '#280a12'] }, ['#2a0a10', '#1a060a', '#0c0305'], '#ffd27a', '#e8b24a', '#7a2028', '#fff0ea', '#d09a94', 'rgba(12,3,5,0.74)'),
+  mk('ivory-onyx', 'IVORY & ONYX', { dawn: ['#1c1a18', '#5a5248', '#e8dcc4'], day: ['#4a4640', '#8a8478', '#efe6d4'], dusk: ['#141210', '#3e3832', '#bfa47a'], night: ['#040404', '#0c0c0c', '#1a1a1a'] }, ['#262422', '#181716', '#0a0a0a'], '#fff8e6', '#e8dcc4', '#5a5248', '#ffffff', '#bdb6aa', 'rgba(10,10,10,0.74)'),
+  mk('rosewood-lounge', 'ROSEWOOD LOUNGE', { dawn: ['#1a0e10', '#5a2e34', '#e8a08a'], day: ['#3a2026', '#7a4a52', '#e6bcb0'], dusk: ['#140a0e', '#4a2030', '#c86a5a'], night: ['#060305', '#120a0e', '#24121a'] }, ['#2a161c', '#1c0e12', '#0e0709'], '#ffc8a0', '#d89a7a', '#7a4a52', '#fdeee8', '#caa29a', 'rgba(14,7,9,0.74)'),
+  mk('indigo-raj', 'INDIGO RAJ', { dawn: ['#0a0a22', '#2e2a6a', '#d89a5a'], day: ['#141a4a', '#33408a', '#a8b4e0'], dusk: ['#080820', '#2a1e5a', '#b05a6a'], night: ['#02020a', '#06061a', '#10123a'] }, ['#10123a', '#0a0c28', '#050614'], '#f2c66a', '#d8b04a', '#33408a', '#eef0ff', '#9ea4d0', 'rgba(5,6,20,0.74)'),
+  mk('amethyst-cabaret', 'AMETHYST CABARET', { dawn: ['#140a1a', '#46285a', '#d890a8'], day: ['#2a1a3a', '#5e3a7a', '#c8a8e0'], dusk: ['#0e0614', '#3a1a4e', '#a04a8a'], night: ['#050208', '#0e0614', '#1e0e2a'] }, ['#1e1028', '#140a1c', '#09050e'], '#ffd0f0', '#c99ae0', '#5e3a7a', '#f8eeff', '#b8a2cc', 'rgba(9,5,14,0.74)'),
+  mk('steel-sunset', 'STEEL & SUNSET', { dawn: ['#10141a', '#3a4a5a', '#e89a6a'], day: ['#26323e', '#5a6e82', '#c8d4de'], dusk: ['#0c1016', '#2e3a4a', '#e0703a'], night: ['#030406', '#080c12', '#141c26'] }, ['#1a222c', '#11171e', '#080b0f'], '#ffb070', '#e8904a', '#5a6e82', '#eef3f8', '#a2b0be', 'rgba(8,11,15,0.74)'),
+)
+
+// ── Location skins (used automatically when travelling; not in the daily rotation) ──
+export const SKINS: Record<'goldcoast' | 'india', Palette> = {
+  goldcoast: mk('skin-goldcoast', 'GOLD COAST — SURF GOLD', { dawn: ['#0a2a3a', '#3a7a8a', '#f2c07a'], day: ['#0a5a7a', '#3aa0b8', '#bfe8ee'], dusk: ['#0a1a2a', '#2a4a6a', '#f08a4a'], night: ['#010a12', '#031824', '#082838'] }, ['#0e3444', '#082430', '#04141c'], '#ffe08a', '#f2c94c', '#2a9aa8', '#f2fbfc', '#9cc8ce', 'rgba(3,20,28,0.72)'),
+  india: mk('skin-india', 'INDIA — MARIGOLD & DIYA', { dawn: ['#2a1206', '#8a3a10', '#ffb84a'], day: ['#5a2a0a', '#c8641a', '#ffd88a'], dusk: ['#1e0a08', '#7a2a14', '#ff8a2a'], night: ['#080304', '#160806', '#2a120a'] }, ['#3a1a0c', '#260f06', '#140803'], '#ffb02e', '#ff9f1c', '#c8641a', '#fff3e0', '#e0b48a', 'rgba(20,8,3,0.74)'),
+}

@@ -9,8 +9,9 @@ import { useHouse } from '../app/house'
 import { useSettings, type LayoutMode } from '../store/settings'
 import { toast } from '../store/ui'
 import { PALETTES } from '../theme/palettes'
-import { ROOMS } from '../config/rooms'
+import { ROOMS, isOpen } from '../config/rooms'
 import { LOCATIONS, type LocationId, type LockInPhase } from '../config/lockin'
+import { alfredStatus, getHouseKey, getUsage, setHouseKey, type Usage } from '../lib/alfred'
 
 // SETTINGS — the Engine Room controls.
 
@@ -67,7 +68,7 @@ function PhaseEditor() {
 
 function RoomManager() {
   const s = useSettings()
-  const built = ROOMS.filter((r) => r.phase === 1)
+  const built = ROOMS.filter(isOpen)
   return (
     <div className="flex flex-col gap-5">
       <Field label="PINNED TO THE BOTTOM BAR (PICK 5, IN ORDER)">
@@ -207,6 +208,43 @@ function DataRoom() {
   )
 }
 
+function AlfredSettings() {
+  const s = useSettings()
+  const [key, setKey] = useState(getHouseKey())
+  const [status, setStatus] = useState<string>('checking…')
+  const [usage, setUsage] = useState<Usage | null>(null)
+  useEffect(() => {
+    void alfredStatus().then((r) => setStatus(!r.ok ? 'can’t reach the server (offline, or not deployed yet)' : r.configured ? 'server ready ✓' : 'server reachable, but the API key / house key aren’t set in Vercel yet'))
+    void getUsage().then(setUsage)
+  }, [])
+  const aud = (usage?.usd ?? 0) * s.usdToAud
+  return (
+    <div className="flex flex-col gap-4">
+      <p className="font-body text-[15px] text-[var(--ink-muted)]">Server: <span className="text-[var(--ink)]">{status}</span></p>
+      <Field label="HOUSE KEY (THE PASSPHRASE YOU SET IN VERCEL)">
+        <div className="flex gap-2">
+          <input className="deco-input flex-1 min-w-0" type="password" autoComplete="off" value={key} onChange={(e) => setKey(e.target.value)} placeholder="Stored only on this device" />
+          <button className="deco-btn px-4" onClick={() => { setHouseKey(key); toast('House key saved on this device') }}>Save</button>
+        </div>
+      </Field>
+      <Field label="MONTHLY BUDGET (AUD) — ALFRED STOPS AT THE CAP">
+        <Stepper value={s.alfredCapAud} onChange={(alfredCapAud) => s.update({ alfredCapAud })} step={5} min={5} suffix="AUD" />
+      </Field>
+      <div>
+        <div className="field-label">THIS MONTH (ESTIMATE)</div>
+        <div className="meter"><div style={{ width: `${Math.min(100, (aud / s.alfredCapAud) * 100)}%`, background: aud > s.alfredCapAud * 0.8 ? '#c0573e' : undefined }} /></div>
+        <p className="font-num text-[13px] text-[var(--ink-muted)] mt-1">
+          ${aud.toFixed(2)} AUD · {usage?.requests ?? 0} requests · {((usage?.input ?? 0) / 1000).toFixed(1)}k in / {((usage?.output ?? 0) / 1000).toFixed(1)}k out / {((usage?.cacheRead ?? 0) / 1000).toFixed(1)}k cached
+        </p>
+      </div>
+      <Field label="USD → AUD RATE (FOR THE ESTIMATE)">
+        <input className="deco-input w-28 font-num" inputMode="decimal" defaultValue={s.usdToAud} onBlur={(e) => Number(e.target.value) > 0 && s.update({ usdToAud: Number(e.target.value) })} />
+      </Field>
+      <p className="font-body text-[13px] text-[var(--ink-muted)]">The real hard limit is the monthly spend limit you set in the Anthropic Console — this meter is an in-app estimate so you can see it coming.</p>
+    </div>
+  )
+}
+
 export function SettingsRoom() {
   const s = useSettings()
   const house = useHouse()
@@ -271,6 +309,7 @@ export function SettingsRoom() {
             <Toggle label="Reduced motion" on={s.reducedMotion} onChange={(reducedMotion) => s.update({ reducedMotion })} />
             <Toggle label="Battery saver" hint="Freezes the skyline animation" on={s.batterySaver} onChange={(batterySaver) => s.update({ batterySaver })} />
             <Toggle label="Marquee splash on open" on={s.splash} onChange={(splash) => s.update({ splash })} />
+            <Toggle label="Location skins" hint="Gold Coast + India skylines while travelling" on={s.locationSkin} onChange={(locationSkin) => s.update({ locationSkin })} />
             <Field label="LAYOUT">
               <Segmented<LayoutMode> value={s.layout} onChange={(layout) => s.update({ layout })} options={[{ value: 'auto', label: 'Auto' }, { value: 'phone', label: 'Phone' }, { value: 'tablet', label: 'Tablet' }, { value: 'desktop', label: 'PC' }]} />
             </Field>
@@ -286,6 +325,7 @@ export function SettingsRoom() {
             </div>
           </DecoCard>
 
+          <div id="alfred"><DecoCard title="ALFRED"><AlfredSettings /></DecoCard></div>
           <DecoCard title="ROOMS"><RoomManager /></DecoCard>
           <DecoCard title="YOUR DATA"><DataRoom /></DecoCard>
           <p className="text-center font-deco text-[10px] tracking-[0.35em] text-[var(--ink-muted)]">GHARANA v3 · PHASE 1 · THE CORE ESTATE</p>

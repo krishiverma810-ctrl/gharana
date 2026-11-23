@@ -178,3 +178,65 @@ export interface Backup {
   reason: string
   data: string
 }
+
+// ── Phase 2 ──────────────────────────────────────────────────────────
+
+export interface PackItem {
+  id: string
+  text: string
+  cat: string
+  done: boolean
+}
+
+export interface SharedCost {
+  id: string
+  desc: string
+  amount: number // AUD
+  paidBy: string
+  splitWith: string[] // names, including the payer
+}
+
+export interface Trip {
+  id: string
+  name: string
+  location: 'melbourne' | 'goldcoast' | 'india'
+  start: string
+  end: string
+  flights: { id: string; label: string; date: string; time: string; number: string; from: string; to: string }[]
+  stay: string
+  itinerary: { id: string; day: string; text: string; done: boolean }[]
+  packing: PackItem[]
+  docs: PackItem[]
+  costs: SharedCost[]
+  crew: string[]
+  notes: string
+  createdAt: number
+}
+
+/**
+ * Generic list item used by many rooms (Family, Deepali, Calendar, Wildcard…).
+ * `room` + `kind` say which list it belongs to. Config-driven: new lists need no migration.
+ */
+export interface Item {
+  id: string
+  room: string
+  kind: string
+  text: string
+  sub?: string // second line: relation, place, note…
+  date?: string // YYYY-MM-DD
+  time?: string
+  done?: boolean
+  num?: number
+  tags?: string[]
+  at: number
+}
+
+export interface ChatRecord {
+  id: string // one conversation per local day: "2026-11-23", or "2026-11-23#2" after New chat
+  day: string
+  /** Full Messages API history, append-only (never edited — keeps thinking blocks valid). */
+  messages: unknown[]
+  /** tool_use id → what ALFRED did, shown as an action chip. */
+  chips: Record<string, string>
+  updatedAt: number
+}
