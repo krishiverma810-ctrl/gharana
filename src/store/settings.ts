@@ -42,6 +42,20 @@ export interface Settings {
   alfredCapAud: number
   usdToAud: number
   deepaliName: string
+  /** Phase 2.5 — voice */
+  voiceProvider: 'device' | 'premium'
+  /** Name of the on-device voice (blank = best British voice available). */
+  deviceVoice: string
+  premiumVoice: string
+  voiceRate: number
+  voicePitch: number
+  speakReplies: boolean
+  subtitles: boolean
+  wakeWord: boolean
+  orbSide: 'left' | 'right'
+  orbY: number
+  /** Push a day snapshot to the server so Siri knows your day. */
+  siriSnapshot: boolean
 }
 
 export type AlfredMode = 'butler' | 'coach' | 'tutor' | 'strategist' | 'mate' | 'calm'
@@ -75,6 +89,17 @@ export const DEFAULT_SETTINGS: Settings = {
   alfredCapAud: 10,
   usdToAud: 1.55,
   deepaliName: 'Deepali',
+  voiceProvider: 'device',
+  deviceVoice: '',
+  premiumVoice: 'fable',
+  voiceRate: 1,
+  voicePitch: 1,
+  speakReplies: true,
+  subtitles: true,
+  wakeWord: false,
+  orbSide: 'right',
+  orbY: 0.72,
+  siriSnapshot: true,
 }
 
 interface SettingsStore extends Settings {

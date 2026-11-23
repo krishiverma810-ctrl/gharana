@@ -1,7 +1,10 @@
 import type Anthropic from '@anthropic-ai/sdk'
 import { addProtein, addWater, db, uid } from '../db/db'
 import { setBig3, setHabitValue, skipHabit, autoTemplateId } from '../db/hooks'
-import { getSettings, currentLocation, habitSetFor, phaseForDay } from '../store/settings'
+import { getSettings, currentLocation, habitSetFor, phaseForDay, useSettings } from '../store/settings'
+import { addReminder } from '../store/reminders'
+import { epley } from './streaks'
+import { toast } from '../store/ui'
 import { useFocus } from '../store/focus'
 import { LOCATIONS } from '../config/lockin'
 import { roomById } from '../config/rooms'
@@ -65,7 +68,7 @@ export async function getUsage(month = new Date().toISOString().slice(0, 7)): Pr
   return (row?.value as Usage) ?? { input: 0, output: 0, cacheWrite: 0, cacheRead: 0, usd: 0, requests: 0 }
 }
 
-async function addUsage(u: ApiReply['usage']) {
+async function addUsage(u: ApiReply['usage'], extraUsd = 0) {
   const month = new Date().toISOString().slice(0, 7)
   const cur = await getUsage(month)
   const usd =
@@ -77,8 +80,8 @@ async function addUsage(u: ApiReply['usage']) {
       output: cur.output + u.output_tokens,
       cacheWrite: cur.cacheWrite + u.cache_creation_input_tokens,
       cacheRead: cur.cacheRead + u.cache_read_input_tokens,
-      usd: cur.usd + usd,
-      requests: cur.requests + 1,
+      usd: cur.usd + usd + extraUsd,
+      requests: cur.requests + (extraUsd ? 0 : 1),
     } satisfies Usage,
   })
 }
@@ -88,7 +91,7 @@ export async function spendAud() {
 }
 
 // ── Where / when am I ─────────────────────────────────────────────────
-function here() {
+export function here() {
   const s = getSettings()
   const now = new Date()
   const location = currentLocation(s, now)
@@ -99,7 +102,10 @@ function here() {
 }
 
 // ── Context snapshot (sent as a system message with each user turn) ──
-export async function buildSnapshot(): Promise<string> {
+/** `voice` = he's listening, not reading — keep it short and speakable. */
+export type Channel = 'chat' | 'voice'
+
+export async function buildSnapshot(channel: Channel = 'chat'): Promise<string> {
   const { s, now, location, timeZone, today, minute, habitSet } = here()
   const phase = phaseForDay(s.phases, today)
   const first = s.phases[0]?.start ?? today
@@ -120,6 +126,7 @@ export async function buildSnapshot(): Promise<string> {
     db.items.where('[room+kind]').equals(['wildcard', 'active']).toArray(),
     db.days.get(addDays(today, -1)),
   ])
+  const memories = await db.items.where('[room+kind]').equals(['alfred', 'memory']).toArray()
   const habits = habitsAll.filter((h) => !h.archived && h.sets.includes(habitSet))
   const logsByHabit = new Map<string, HabitLog[]>()
   for (const l of logsAll) logsByHabit.set(l.habitId, [...(logsByHabit.get(l.habitId) ?? []), l])
@@ -127,6 +134,8 @@ export async function buildSnapshot(): Promise<string> {
   const lines: string[] = []
   lines.push(`NOW: ${formatLongDate(now, timeZone)}, ${formatTime(now, timeZone)}, in ${LOCATIONS[location].name} (${timeZone}).`)
   lines.push(`MODE: ${s.alfredMode} · DELULU: ${s.delulu ? 'on' : 'off'} · LANGUAGE: ${s.alfredLang}`)
+  if (channel === 'voice') lines.push('CHANNEL: voice — he is listening, not reading. Reply in 1–3 short spoken sentences. No markdown, lists or emoji.')
+  if (memories.length) lines.push(`MEMORY BANK (things he asked you to remember):\n${memories.slice(-40).map((m) => `- ${m.text}`).join('\n')}`)
   if (phase) lines.push(`LOCK-IN: Phase ${phase.numeral} ${phase.name}, day ${daysBetween(first, today) + 1} of ${daysBetween(first, last) + 1}.${next ? ` ${next.name} in ${daysBetween(today, next.start)} days.` : ''}`)
 
   lines.push(`HABITS (${habitSet} set) — id: name, today, streak:`)
@@ -266,6 +275,53 @@ const TOOL_RUNNERS: Record<string, Runner> = {
     lastMissionCount = n
     return { result: `Added ${n} missions.`, chip: `🎲 ${n} new Wildcard missions` }
   },
+  async log_lift(i) {
+    const { today } = here()
+    const lift = str(i.lift) || 'Lift'
+    const weight = num(i.weight)
+    const reps = Math.round(num(i.reps))
+    const sets = Math.max(1, Math.min(10, Math.round(num(i.sets) || 1)))
+    if (!(weight >= 0) || !(reps > 0)) return { result: 'Invalid set.', chip: 'Lift: invalid', error: true }
+    const prev = (await db.lifts.where('lift').equals(lift).toArray()).reduce((m, l) => Math.max(m, l.e1rm), 0)
+    const e1rm = epley(weight, reps)
+    for (let k = 0; k < sets; k++) await db.lifts.add({ id: uid(), day: today, lift, weight, reps, e1rm, at: Date.now() + k })
+    const pr = e1rm > prev
+    return { result: `Logged ${sets}×${reps} @ ${weight} kg. e1RM ${e1rm} kg${pr ? ` — NEW PR (was ${prev || 'none'})` : ''}.`, chip: `🏋 ${lift} ${sets}×${reps} @ ${weight}kg${pr ? ' · PR!' : ''}` }
+  },
+  async set_timer(i) {
+    const minutes = Math.max(1, Math.min(600, Math.round(num(i.minutes) || 0)))
+    addReminder(minutes, str(i.label) || 'Timer')
+    return { result: `Reminder set for ${minutes} min.`, chip: `⏰ ${minutes} min · ${str(i.label) || 'Timer'}` }
+  },
+  async set_travel_mode(i) {
+    const mode = (['auto', 'melbourne', 'goldcoast', 'india'] as const).find((m) => m === i.mode)
+    if (!mode) return { result: 'Unknown mode.', chip: 'Travel mode: unknown', error: true }
+    useSettings.getState().update({ location: mode })
+    return { result: `Travel Mode set to ${mode}.`, chip: `✈ Travel Mode: ${mode}` }
+  },
+  async app_setting(i) {
+    const on = i.on === true
+    const map: Record<string, Partial<ReturnType<typeof getSettings>>> = {
+      sound: { sound: on }, battery_saver: { batterySaver: on }, low_glare: { lowGlare: on }, reduced_motion: { reducedMotion: on }, speak_replies: { speakReplies: on }, palette_shuffle: on ? { pinnedPaletteId: null } : {},
+    }
+    const patch = map[str(i.setting)]
+    if (!patch) return { result: 'Unknown setting.', chip: 'Setting: unknown', error: true }
+    useSettings.getState().update(patch)
+    return { result: 'Done.', chip: `⚙ ${str(i.setting).replace('_', ' ')} ${on ? 'on' : 'off'}` }
+  },
+  async remember(i) {
+    const fact = str(i.fact).trim().slice(0, 300)
+    if (!fact) return { result: 'Nothing to remember.', chip: 'Memory: empty', error: true }
+    await addItem('alfred', 'memory', { text: fact })
+    return { result: 'Saved to the Memory Bank.', chip: `🧠 Remembered: ${fact.slice(0, 60)}` }
+  },
+  async forget(i) {
+    const q = str(i.match).toLowerCase().trim()
+    const all = await db.items.where('[room+kind]').equals(['alfred', 'memory']).toArray()
+    const hits = all.filter((m) => q && m.text.toLowerCase().includes(q))
+    await db.items.bulkDelete(hits.map((h) => h.id))
+    return { result: `Forgot ${hits.length} memories.`, chip: `🧠 Forgot ${hits.length}` }
+  },
 }
 let lastMissionCount = 0
 
@@ -346,12 +402,12 @@ export function chatIdFor(day: string) {
  * Send a message in today's conversation. History is append-only: nothing is saved until the
  * API has answered, so a failed send never leaves a half-turn behind.
  */
-export async function sendToAlfred(chatId: string, content: string | BlockParam[], onProgress?: (rec: ChatRecord) => void): Promise<ChatRecord> {
+export async function sendToAlfred(chatId: string, content: string | BlockParam[], onProgress?: (rec: ChatRecord) => void, channel: Channel = 'chat'): Promise<ChatRecord> {
   await checkBudget()
   const { today } = here()
   const rec: ChatRecord = (await db.chats.get(chatId)) ?? { id: chatId, day: today, messages: [], chips: {}, updatedAt: Date.now() }
   const base = rec.messages as Msg[]
-  const outgoing: Msg[] = [...base, { role: 'user', content }, { role: 'system', content: await buildSnapshot() }]
+  const outgoing: Msg[] = [...base, { role: 'user', content }, { role: 'system', content: await buildSnapshot(channel) }]
   const chips = { ...rec.chips }
   const { messages, refusal } = await loop(outgoing, chips, (m) => onProgress?.({ ...rec, messages: m, chips }))
   const saved: ChatRecord = { ...rec, messages, chips, updatedAt: Date.now() }
@@ -424,4 +480,60 @@ export async function imageToBlock(file: File): Promise<BlockParam> {
   c.getContext('2d')!.drawImage(bmp, 0, 0, c.width, c.height)
   const data = c.toDataURL('image/jpeg', 0.82).split(',')[1]
   return { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } }
+}
+
+// ── Siri bridge ───────────────────────────────────────────────────────
+
+/** Last assistant text in a chat — what ALFRED just said. */
+export function lastReply(rec: ChatRecord): string {
+  const msgs = rec.messages as Msg[]
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const m = msgs[i]
+    if (m.role !== 'assistant') continue
+    if (typeof m.content === 'string') return m.content
+    const t = (m.content as Block[]).flatMap((b) => (b.type === 'text' ? [b.text] : [])).join('\n').trim()
+    if (t) return t
+  }
+  return ''
+}
+
+/** Apply actions Siri queued on the server since the app was last open. */
+export async function pullSiriQueue(): Promise<number> {
+  const key = getHouseKey()
+  if (!key || !navigator.onLine) return 0
+  try {
+    const r = await fetch(`/api/alfred?queue=1&t=${Date.now()}`, { headers: { 'x-house-key': key }, cache: 'no-store' })
+    if (!r.ok) return 0
+    const data = (await r.json()) as { actions?: { name: string; input: Record<string, unknown> }[]; siriUsd?: number }
+    if (data.siriUsd) await addUsage({ input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 }, data.siriUsd)
+    let n = 0
+    for (const a of data.actions ?? []) {
+      const run = TOOL_RUNNERS[a.name]
+      if (!run) continue
+      try {
+        const out = await run(a.input ?? {})
+        if (!out.error) n++
+        toast(`From Siri: ${out.chip}`)
+      } catch {
+        /* skip a bad action */
+      }
+    }
+    return n
+  } catch {
+    return 0
+  }
+}
+
+let lastPush = 0
+/** Send today's snapshot to the server so "Hey Siri, Alfred" knows your day. At most every 10 min. */
+export async function pushSnapshotForSiri(force = false) {
+  const s = getSettings()
+  if (!s.siriSnapshot || !getHouseKey() || !navigator.onLine) return
+  if (!force && Date.now() - lastPush < 10 * 60_000) return
+  lastPush = Date.now()
+  try {
+    await fetch('/api/alfred', { method: 'POST', headers: { 'content-type': 'application/json', 'x-house-key': getHouseKey() }, body: JSON.stringify({ kind: 'snapshot', text: await buildSnapshot('voice') }) })
+  } catch {
+    /* offline — next time */
+  }
 }

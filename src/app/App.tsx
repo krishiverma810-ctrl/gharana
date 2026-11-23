@@ -26,6 +26,11 @@ import { CalendarRoom } from '../rooms/Calendar'
 import { Wildcard } from '../rooms/Wildcard'
 import { Alfred } from '../rooms/Alfred'
 import { DeepaliCorner, FamilyRoom } from '../rooms/Mehfil2'
+import { Captions, Orb, useVoiceHotkeys } from '../components/VoiceUI'
+import { useReminders } from '../store/reminders'
+import { startWakeIfEnabled, stopWakeWord, useVoice } from '../store/voice'
+import { pullSiriQueue, pushSnapshotForSiri } from '../lib/alfred'
+import { speak } from '../lib/voice'
 
 const ROOM_COMPONENTS: Record<string, ComponentType> = {
   lounge: Lounge,
@@ -99,6 +104,40 @@ function Estate() {
   const battery = useSettings((s) => s.batterySaver)
   const lowGlare = useSettings((s) => s.lowGlare)
   const checkFocus = useFocus((s) => s.check)
+  const checkReminders = useReminders((s) => s.check)
+  const wakeWord = useSettings((s) => s.wakeWord)
+  useVoiceHotkeys()
+
+  // Reminders: chime + notification, and ALFRED reads it out.
+  useEffect(() => {
+    const t = setInterval(() => checkReminders((r) => void speak(`Sir — ${r.label}.`)), 1000)
+    return () => clearInterval(t)
+  }, [checkReminders])
+
+  // Siri bridge: apply anything Siri queued, and share today's snapshot so Siri knows the day.
+  useEffect(() => {
+    const sync = () => {
+      if (document.visibilityState !== 'visible') return
+      void pullSiriQueue()
+      void pushSnapshotForSiri()
+    }
+    sync()
+    const t = setInterval(sync, 120_000)
+    document.addEventListener('visibilitychange', sync)
+    return () => {
+      clearInterval(t)
+      document.removeEventListener('visibilitychange', sync)
+    }
+  }, [])
+
+  // In-app wake word (experimental).
+  useEffect(() => {
+    if (wakeWord) startWakeIfEnabled()
+    else stopWakeWord()
+    const vis = () => (document.visibilityState === 'visible' ? startWakeIfEnabled() : (stopWakeWord(), useVoice.getState().stopAll()))
+    document.addEventListener('visibilitychange', vis)
+    return () => document.removeEventListener('visibilitychange', vis)
+  }, [wakeWord])
 
   // Focus timer engine — checks once a second whether a session finished.
   useEffect(() => {
@@ -134,6 +173,8 @@ function Estate() {
         </AnimatePresence>
       </Shell>
       <CommandPalette />
+      {shell === 'phone' && <Orb />}
+      <Captions />
       <FocusFullscreen />
       <Toasts />
       <Confetti />

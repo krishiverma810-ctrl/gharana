@@ -11,6 +11,8 @@ import { useSettings, type AlfredMode } from '../store/settings'
 import { toast } from '../store/ui'
 import { AlfredError, flushQueue, getHouseKey, getQueue, getUsage, imageToBlock, queueMessage, sendToAlfred } from '../lib/alfred'
 import type { ChatRecord } from '../db/types'
+import { ListCard } from '../components/ListCard'
+import { useVoice } from '../store/voice'
 
 // ALFRED — the butler. Chat, photos, modes, DELULU, spend meter, offline queue.
 
@@ -39,7 +41,10 @@ interface Bubble {
 
 type Msg = { role: string; content: unknown }
 
-function toBubbles(rec?: ChatRecord): Bubble[] {
+/** Light markdown clean-up for display: **bold**, headings, bullets. */
+const tidy = (t: string) => t.replace(/\*\*(.+?)\*\*/g, '$1').replace(/^#{1,6}\s*/gm, '').replace(/^\s*[-*]\s+/gm, '• ')
+
+export function toBubbles(rec?: ChatRecord): Bubble[] {
   if (!rec) return []
   const out: Bubble[] = []
   ;(rec.messages as Msg[]).forEach((m, i) => {
@@ -55,7 +60,7 @@ function toBubbles(rec?: ChatRecord): Bubble[] {
       if (text || images.length) out.push({ key: `${i}`, who: 'me', text, images })
     } else {
       blocks.forEach((b, j) => {
-        if (b.type === 'text' && b.text?.trim()) out.push({ key: `${i}-${j}`, who: 'alfred', text: b.text })
+        if (b.type === 'text' && b.text?.trim()) out.push({ key: `${i}-${j}`, who: 'alfred', text: tidy(b.text) })
         if (b.type === 'tool_use' && b.id && rec.chips[b.id]) out.push({ key: `${i}-${j}`, who: 'chip', text: rec.chips[b.id] })
       })
     }
@@ -93,6 +98,7 @@ export function Alfred() {
   const file = useRef<HTMLInputElement>(null)
   const end = useRef<HTMLDivElement>(null)
   const hasKey = !!getHouseKey()
+  const voice = useVoice()
 
   const refreshMeta = async () => {
     setQueue((await getQueue()).length)
@@ -212,6 +218,15 @@ export function Alfred() {
         )}
         <div className="flex gap-2 items-end">
           <button className="icon-btn" aria-label="Add a photo" onClick={() => file.current?.click()}><Icon name="camera" /></button>
+          <button
+            className={`icon-btn ${voice.state === 'listening' ? 'text-[var(--accent)]' : ''}`}
+            aria-label="Hold to talk"
+            onPointerDown={() => voice.startHold()}
+            onPointerUp={() => voice.endHold()}
+            onContextMenu={(e) => e.preventDefault()}
+          >
+            🎙
+          </button>
           <input ref={file} type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) setImages([...images, f].slice(0, 3)); e.target.value = '' }} />
           <textarea
             className="deco-input flex-1 min-w-0 min-h-[46px] max-h-40"
@@ -224,6 +239,15 @@ export function Alfred() {
           <button className="deco-btn px-4" onClick={() => send()} disabled={busy || (!text.trim() && !images.length)} aria-label="Send">Send</button>
         </div>
       </div>
+
+      <button className={`deco-btn ${voice.convo ? '' : 'ghost'}`} onClick={() => voice.toggleConvo()}>
+        {voice.convo ? 'End conversation' : 'Talk to ALFRED (conversation mode)'}
+      </button>
+
+      <DecoCard title="MEMORY BANK">
+        <p className="font-body text-[14px] text-[var(--ink-muted)] mb-3">What ALFRED remembers about you. Say “remember…” or “forget that…”, or edit here. He sees these with every message.</p>
+        <ListCard room="alfred" kind="memory" placeholder="e.g. I want to be up before 7 by January" empty="Nothing remembered yet." />
+      </DecoCard>
 
       <DecoCard title="HOUSE RULES FOR ALFRED">
         <Toggle label="DELULU" hint="Roasts your excuses — never you. Drops the bit if you’re genuinely down." on={s.delulu} onChange={(delulu) => s.update({ delulu })} />

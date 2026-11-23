@@ -10,7 +10,8 @@ The full spec is in [`GHARANA_v3_BUILD_PROMPT.md`](GHARANA_v3_BUILD_PROMPT.md). 
 - [x] **Phase 0** — setup, placeholder Lounge, living skyline, 9 palettes, on-device DB, PWA
 - [x] **Phase 1** — Core Estate: phone + PC shells, Corridor, command palette, Lounge, Daily Rites, Morning Rite, Night Debrief, Blueprint (+ focus timer, shifts), Patrol (+ PR vault, boxing rounds), Vault, Settings (phases, Travel Mode, rooms, data)
 - [x] **Phase 2** — Travel-ready: Concierge (trips, flights, packing, docs, shared costs, jet lag, re-entry), Gold Coast + India skyline skins, 7 new palettes, Family Room, Deepali’s Corner, Wildcard (308 missions), Calendar (+ .ics), ALFRED on Vercel (tools, photos, modes, DELULU, spend cap, offline queue)
-- [ ] 2.5 — Voice/JARVIS · [ ] 3 — Boardroom + Library · [ ] 4 — Full House · [ ] 5 — Polish
+- [x] **Phase 2.5a** — Voice: Gold Orb (hold / tap / double-tap / drag), conversation mode, captions, 25+ offline voice commands, spoken replies (device or premium), desktop dock + Right-Alt hold-to-talk, Memory Bank, reminders, Siri bridge (`kind: siri | quick`, Upstash queue), morning briefing
+- [ ] 2.5b — Windows desktop app (Tauri): system-wide hotkey, tray, overlay · [ ] 3 — Boardroom + Library · [ ] 4 — Full House · [ ] 5 — Polish
 
 ## Run it
 ```bash
@@ -35,6 +36,11 @@ Vercel → Project → Settings → Environment Variables:
 - `ALFRED_ACCESS_KEY` — a passphrase you choose; enter the same one in the app under Settings → ALFRED
 
 The API key never reaches the phone. The app runs the tool loop locally and sends a short day snapshot with each message. History is append-only (frozen system prompt + per-turn system messages) so thinking blocks stay valid; refusals fall back server-side (`fallbacks: "default"`).
+
+## Voice + Siri (optional server pieces)
+- **Upstash Redis** (Vercel → Storage → Upstash, free): lets Siri queue actions + read today's snapshot. Env vars `KV_REST_API_URL` / `KV_REST_API_TOKEN` (or `UPSTASH_REDIS_REST_*`) are added by the integration.
+- **OPENAI_API_KEY** (optional): premium TTS/STT via `/api/voice`. Without it the phone's own voices + speech recognition are used.
+- Siri Shortcut: POST `/api/alfred?format=text` with header `x-house-key` and JSON `{ "kind": "siri", "text": <dictated> }` → plain-text reply for "Speak Text". One-tap: `{ "kind": "quick", "action": "water", "amount": 500 }`.
 
 ## Stack
 Vite + React 19 + TypeScript · Tailwind v4 + CSS variables (palette tokens) · Zustand · Dexie (IndexedDB) ·

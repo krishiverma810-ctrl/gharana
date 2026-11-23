@@ -133,7 +133,65 @@ const TOOLS: Anthropic.Beta.BetaTool[] = [
       required: ['missions'],
     },
   },
+  // ── Phase 2.5 ──
+  {
+    name: 'log_lift',
+    description: 'Log a strength set to the PR Vault, e.g. "bench, 3 sets of 8 at 60" → lift "Bench Press", weight 60, reps 8, sets 3.',
+    input_schema: { type: 'object', properties: { lift: { type: 'string' }, weight: { type: 'number', description: 'kg' }, reps: { type: 'number' }, sets: { type: 'number' } }, required: ['lift', 'weight', 'reps'] },
+  },
+  {
+    name: 'set_timer',
+    description: 'Set a reminder/timer that alerts him after N minutes (cooking timer, "remind me in 20 minutes to…").',
+    input_schema: { type: 'object', properties: { minutes: { type: 'number' }, label: { type: 'string' } }, required: ['minutes', 'label'] },
+  },
+  {
+    name: 'set_travel_mode',
+    description: 'Switch Travel Mode: auto (follow lock-in dates), melbourne, goldcoast or india.',
+    input_schema: { type: 'object', properties: { mode: { type: 'string', enum: ['auto', 'melbourne', 'goldcoast', 'india'] } }, required: ['mode'] },
+  },
+  {
+    name: 'app_setting',
+    description: 'Change an app setting.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        setting: { type: 'string', enum: ['sound', 'battery_saver', 'low_glare', 'reduced_motion', 'speak_replies', 'palette_shuffle'] },
+        on: { type: 'boolean' },
+      },
+      required: ['setting', 'on'],
+    },
+  },
+  {
+    name: 'remember',
+    description: 'Save a lasting fact about Krishi to the Memory Bank (goals, preferences, people, patterns). Use when he says "remember…" or shares something clearly worth keeping. Keep each fact one short sentence.',
+    input_schema: { type: 'object', properties: { fact: { type: 'string' } }, required: ['fact'] },
+  },
+  {
+    name: 'forget',
+    description: 'Delete Memory Bank facts matching a phrase, when he says "forget that…".',
+    input_schema: { type: 'object', properties: { match: { type: 'string' } }, required: ['match'] },
+  },
 ]
+
+// ── Small key-value store for Siri (optional) ─────────────────────────
+// Uses Upstash Redis (Vercel Marketplace → Upstash, free tier). Without it, Siri can still chat,
+// but can't log anything or see today's snapshot.
+const KV_URL = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL
+const KV_TOKEN = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN
+const QUEUE_KEY = 'gharana:queue'
+const SNAP_KEY = 'gharana:snapshot'
+
+async function kv(commands: (string | number)[][]): Promise<{ result?: unknown; error?: string }[]> {
+  if (!KV_URL || !KV_TOKEN) throw new Error('kv_not_configured')
+  const r = await fetch(`${KV_URL}/pipeline`, { method: 'POST', headers: { authorization: `Bearer ${KV_TOKEN}`, 'content-type': 'application/json' }, body: JSON.stringify(commands) })
+  if (!r.ok) throw new Error(`kv_${r.status}`)
+  return r.json()
+}
+
+async function enqueue(actions: { name: string; input: unknown }[]) {
+  if (!actions.length) return
+  await kv(actions.map((a) => ['RPUSH', QUEUE_KEY, JSON.stringify({ ...a, at: Date.now() })]))
+}
 
 const client = new Anthropic() // reads ANTHROPIC_API_KEY from the environment
 
@@ -149,8 +207,131 @@ function safeEqual(a: string, b: string) {
   return r === 0
 }
 
-export async function GET() {
-  return json({ ok: true, configured: Boolean(process.env.ANTHROPIC_API_KEY && process.env.ALFRED_ACCESS_KEY), model: MODEL })
+
+type Effort = 'low' | 'medium' | 'high'
+
+async function create(messages: unknown[], effort: Effort, tools: Anthropic.Beta.BetaTool[]) {
+  return client.beta.messages.create({
+    model: MODEL,
+    max_tokens: 16000,
+    system: SYSTEM,
+    tools,
+    // Mid-conversation `system` entries (per-turn context) are sent as-is.
+    messages: messages as Anthropic.Beta.BetaMessageParam[],
+    cache_control: { type: 'ephemeral' },
+    output_config: { effort },
+    // If a thinking block can't be replayed (e.g. the system prompt changed in a new deploy),
+    // drop it instead of failing the request.
+    thinking: { type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } },
+    // On a safety decline, the API retries on a fallback model automatically.
+    fallbacks: 'default',
+    betas: ['server-side-fallback-2026-07-01', 'thinking-binding-controls-2026-08-01'],
+  })
+}
+
+const usageOf = (u: Anthropic.Beta.BetaUsage) => ({
+  input_tokens: u.input_tokens,
+  output_tokens: u.output_tokens,
+  cache_creation_input_tokens: u.cache_creation_input_tokens ?? 0,
+  cache_read_input_tokens: u.cache_read_input_tokens ?? 0,
+})
+const usdOf = (u: ReturnType<typeof usageOf>) =>
+  (u.input_tokens * 4 + u.output_tokens * 20 + u.cache_creation_input_tokens * 5 + u.cache_read_input_tokens * 0.2) / 1_000_000
+
+function errorResponse(error: unknown) {
+  if (error instanceof Anthropic.AuthenticationError) return json({ error: 'anthropic_auth', message: 'The Anthropic API key on the server is invalid.' }, 502)
+  if (error instanceof Anthropic.PermissionDeniedError) return json({ error: 'anthropic_permission', message: 'The Anthropic account can’t use this model (check billing / credits).' }, 502)
+  if (error instanceof Anthropic.RateLimitError) return json({ error: 'rate_limited', message: 'ALFRED is being rate-limited. Try again in a minute.' }, 429)
+  if (error instanceof Anthropic.BadRequestError) return json({ error: 'bad_request', message: error.message }, 400)
+  if (error instanceof Anthropic.APIError) return json({ error: 'anthropic_error', message: `Anthropic error ${error.status ?? ''}`.trim() }, 502)
+  return json({ error: 'server_error', message: 'Something went wrong on the server.' }, 500)
+}
+
+// ── Siri ──────────────────────────────────────────────────────────────
+const SIRI_TOOLS = TOOLS.filter((t) => !['open_room', 'start_focus', 'app_setting'].includes(t.name))
+const SIRI_NOTE = `CHANNEL: Siri voice shortcut — he can't see a screen. Reply in at most two short spoken sentences: no markdown, no emoji, no lists. Actions you take are queued and applied the next time GHARANA opens on his phone, so confirm them as "noted" / "logged", never "on screen".`
+
+async function siri(text: string) {
+  let snapshot = 'No snapshot from his phone yet.'
+  let kvOk = Boolean(KV_URL && KV_TOKEN)
+  if (kvOk) {
+    try {
+      const [r] = await kv([['GET', SNAP_KEY]])
+      if (typeof r?.result === 'string') snapshot = r.result
+    } catch {
+      kvOk = false
+    }
+  }
+  const messages: unknown[] = [
+    { role: 'user', content: text },
+    { role: 'system', content: `${SIRI_NOTE}\n\nLATEST SNAPSHOT FROM HIS PHONE (may be a few hours old):\n${snapshot}` },
+  ]
+  const queued: { name: string; input: unknown }[] = []
+  let reply = ''
+  let usd = 0
+  for (let i = 0; i < 4; i++) {
+    const res = await create(messages, 'low', SIRI_TOOLS)
+    usd += usdOf(usageOf(res.usage))
+    messages.push({ role: 'assistant', content: res.content })
+    if (res.stop_reason === 'refusal') {
+      reply = 'I’m afraid I can’t help with that one, sir.'
+      break
+    }
+    if (res.stop_reason !== 'tool_use') {
+      reply = res.content.flatMap((b) => (b.type === 'text' ? [b.text] : [])).join(' ').trim()
+      break
+    }
+    const results = res.content.flatMap((b) => {
+      if (b.type !== 'tool_use') return []
+      if (kvOk) queued.push({ name: b.name, input: b.input })
+      return [{
+        type: 'tool_result',
+        tool_use_id: b.id,
+        content: kvOk ? 'Queued — it will apply when GHARANA next opens.' : 'Not saved: the action store (Upstash) is not set up yet. Tell him to log it in the app.',
+        ...(kvOk ? {} : { is_error: true }),
+      }]
+    })
+    messages.push({ role: 'user', content: results })
+  }
+  if (kvOk) {
+    await enqueue(queued)
+    await kv([['INCRBYFLOAT', 'gharana:siri_usd', usd.toFixed(6)]])
+  }
+  return reply || 'Very good, sir.'
+}
+
+// One-tap Siri shortcuts that need no AI at all (free).
+const QUICK: Record<string, (b: Record<string, unknown>) => { action?: { name: string; input: unknown }; reply: string }> = {
+  water: (b) => ({ action: { name: 'log_fuel', input: { kind: 'water', amount: Number(b.amount) || 250 } }, reply: `${Number(b.amount) || 250} millilitres of water, logged.` }),
+  protein: (b) => ({ action: { name: 'log_fuel', input: { kind: 'protein', amount: Number(b.amount) || 25 } }, reply: `${Number(b.amount) || 25} grams of protein, logged.` }),
+  capture: (b) => ({ action: { name: 'capture', input: { text: String(b.text ?? ''), dest: 'inbox' } }, reply: 'Noted in your inbox, sir.' }),
+  focus: (b) => ({ action: { name: 'start_focus', input: { minutes: Number(b.minutes) || 25, label: 'Deep Study' } }, reply: `A ${Number(b.minutes) || 25} minute focus timer will start when you open GHARANA.` }),
+}
+
+// ── Routes ────────────────────────────────────────────────────────────
+
+/** GET /api/alfred → status. GET /api/alfred?queue=1 (with house key) → pull Siri's queued actions. */
+export async function GET(request: Request) {
+  const url = new URL(request.url)
+  if (url.searchParams.get('queue')) {
+    const houseKey = process.env.ALFRED_ACCESS_KEY
+    if (!houseKey || !safeEqual(request.headers.get('x-house-key') ?? '', houseKey)) return json({ error: 'bad_key' }, 401)
+    if (!KV_URL || !KV_TOKEN) return json({ actions: [], siriUsd: 0, kv: false })
+    try {
+      const [list, , usd] = await kv([['LRANGE', QUEUE_KEY, 0, -1], ['DEL', QUEUE_KEY], ['GETDEL', 'gharana:siri_usd']])
+      const actions = Array.isArray(list?.result) ? (list.result as string[]).map((s) => JSON.parse(s)) : []
+      return json({ actions, siriUsd: Number(usd?.result) || 0, kv: true })
+    } catch {
+      return json({ error: 'kv_error', actions: [], siriUsd: 0, kv: false }, 502)
+    }
+  }
+  return json({
+    ok: true,
+    configured: Boolean(process.env.ANTHROPIC_API_KEY && process.env.ALFRED_ACCESS_KEY),
+    kv: Boolean(KV_URL && KV_TOKEN),
+    voice: Boolean(process.env.OPENAI_API_KEY),
+    model: MODEL,
+  })
 }
 
 export async function POST(request: Request) {
@@ -158,51 +339,55 @@ export async function POST(request: Request) {
   if (!process.env.ANTHROPIC_API_KEY || !houseKey) return json({ error: 'not_configured', message: 'ALFRED isn’t set up on the server yet (missing environment variables).' }, 503)
   if (!safeEqual(request.headers.get('x-house-key') ?? '', houseKey)) return json({ error: 'bad_key', message: 'Wrong house key. Check Settings → ALFRED.' }, 401)
 
-  let body: { messages?: unknown; effort?: string }
+  let body: Record<string, unknown>
   try {
     body = await request.json()
   } catch {
     return json({ error: 'bad_request', message: 'Invalid JSON.' }, 400)
   }
-  if (!Array.isArray(body.messages) || body.messages.length === 0 || body.messages.length > 600) {
-    return json({ error: 'bad_request', message: 'Messages must be a non-empty list.' }, 400)
-  }
-  const effort = (['low', 'medium', 'high'] as const).find((e) => e === body.effort) ?? 'low'
+  // Siri Shortcuts can ask for plain text (so "Speak Text" works directly).
+  const asText = new URL(request.url).searchParams.get('format') === 'text'
+  const reply = (text: string) =>
+    asText ? new Response(text, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } }) : json({ reply: text })
 
   try {
-    const response = await client.beta.messages.create({
-      model: MODEL,
-      max_tokens: 16000,
-      system: SYSTEM,
-      tools: TOOLS,
-      messages: body.messages as Anthropic.Beta.BetaMessageParam[],
-      cache_control: { type: 'ephemeral' },
-      output_config: { effort },
-      // If a thinking block can't be replayed (e.g. the system prompt changed in a new deploy),
-      // drop it instead of failing the request.
-      thinking: { type: 'adaptive', block_binding: { prefix_mismatch_behavior: 'drop_block' } },
-      // On a safety decline, the API retries on a fallback model automatically.
-      fallbacks: 'default',
-      betas: ['server-side-fallback-2026-07-01', 'thinking-binding-controls-2026-08-01'],
-    })
-    return json({
-      content: response.content,
-      stop_reason: response.stop_reason,
-      stop_details: response.stop_details ?? null,
-      model: response.model,
-      usage: {
-        input_tokens: response.usage.input_tokens,
-        output_tokens: response.usage.output_tokens,
-        cache_creation_input_tokens: response.usage.cache_creation_input_tokens ?? 0,
-        cache_read_input_tokens: response.usage.cache_read_input_tokens ?? 0,
-      },
-    })
+    switch (body.kind) {
+      case 'siri': {
+        const text = String(body.text ?? '').slice(0, 2000).trim()
+        if (!text) return reply('I didn’t catch that, sir.')
+        return reply(await siri(text))
+      }
+      case 'quick': {
+        const q = QUICK[String(body.action)]
+        if (!q) return reply('I don’t know that shortcut, sir.')
+        const { action, reply: text } = q(body)
+        if (!KV_URL || !KV_TOKEN) return reply('The action store isn’t set up yet — log it in the app, sir.')
+        if (action) await enqueue([action])
+        return reply(text)
+      }
+      case 'snapshot': {
+        // The app pushes its latest day snapshot so Siri knows what's going on (kept for 2 days).
+        if (!KV_URL || !KV_TOKEN) return json({ ok: false, kv: false })
+        await kv([['SET', SNAP_KEY, String(body.text ?? '').slice(0, 20000), 'EX', 172800]])
+        return json({ ok: true })
+      }
+      default: {
+        if (!Array.isArray(body.messages) || body.messages.length === 0 || body.messages.length > 600) {
+          return json({ error: 'bad_request', message: 'Messages must be a non-empty list.' }, 400)
+        }
+        const effort = (['low', 'medium', 'high'] as const).find((e) => e === body.effort) ?? 'low'
+        const response = await create(body.messages, effort, TOOLS)
+        return json({
+          content: response.content,
+          stop_reason: response.stop_reason,
+          stop_details: response.stop_details ?? null,
+          model: response.model,
+          usage: usageOf(response.usage),
+        })
+      }
+    }
   } catch (error) {
-    if (error instanceof Anthropic.AuthenticationError) return json({ error: 'anthropic_auth', message: 'The Anthropic API key on the server is invalid.' }, 502)
-    if (error instanceof Anthropic.PermissionDeniedError) return json({ error: 'anthropic_permission', message: 'The Anthropic account can’t use this model (check billing / credits).' }, 502)
-    if (error instanceof Anthropic.RateLimitError) return json({ error: 'rate_limited', message: 'ALFRED is being rate-limited. Try again in a minute.' }, 429)
-    if (error instanceof Anthropic.BadRequestError) return json({ error: 'bad_request', message: error.message }, 400)
-    if (error instanceof Anthropic.APIError) return json({ error: 'anthropic_error', message: `Anthropic error ${error.status ?? ''}`.trim() }, 502)
-    return json({ error: 'server_error', message: 'Something went wrong on the server.' }, 500)
+    if (error instanceof Error && error.message.startsWith('kv_')) return reply('My notebook is unavailable right now, sir — please log it in the app.')
+    return errorResponse(error)
   }
 }

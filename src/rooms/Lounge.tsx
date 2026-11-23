@@ -21,6 +21,7 @@ import { VERSES } from '../config/verses'
 import { QUOTES } from '../config/quotes'
 import { HOME_TIME_ZONE } from '../config/lockin'
 import type { Big3Item, CaptureDest } from '../db/types'
+import { useVoice } from '../store/voice'
 import { CATEGORY_COLORS } from '../config/defaults'
 
 // THE LOUNGE — daily command. Phone shows the compact essentials (tap to see the rest);
@@ -291,6 +292,18 @@ export function Lounge() {
   const day = useDay(today)
   const workouts = useLiveQuery(() => db.workouts.where('day').equals(today).toArray(), [today]) ?? []
   const [expanded, setExpanded] = useState(false)
+  const voice = useVoice()
+  const briefing = house.hour >= 4 && house.hour < 12 && (
+    <DecoCard title="MORNING BRIEFING">
+      <button
+        className="deco-btn w-full"
+        disabled={voice.state !== 'idle'}
+        onClick={() => voice.ask('Brief me on today out loud: greeting, the palette of the day, my Big 3, the next Blueprint blocks, streaks at risk, fuel, countdowns and the verse — under 90 seconds.', { speak: true })}
+      >
+        {voice.state === 'thinking' ? 'ALFRED is preparing…' : voice.state === 'speaking' ? 'ALFRED is speaking…' : '▶ Play ALFRED’s briefing'}
+      </button>
+    </DecoCard>
+  )
   const phone = window.innerWidth < 900 && s.layout !== 'desktop'
 
   const score = houseScore({ habits, logs, day, workouts, waterTarget: s.waterTargetMl, proteinTarget: s.proteinTargetG, wakeTarget: s.wakeTarget })
@@ -358,6 +371,7 @@ export function Lounge() {
       <div className="flex flex-col gap-4">
         <Ticker items={ticker} />
         <Clock />
+        {briefing}
         {Score}
         <DecoCard title="TODAY’S BIG 3"><Big3 day={today} /></DecoCard>
         <DecoCard><NowCard /></DecoCard>
@@ -383,6 +397,7 @@ export function Lounge() {
       <div className="desk-grid">
         <div className="flex flex-col gap-5">
           <Clock />
+          {briefing}
           {Score}
           {rites}
         </div>

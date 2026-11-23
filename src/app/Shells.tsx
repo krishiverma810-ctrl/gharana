@@ -11,6 +11,7 @@ import { toast } from '../store/ui'
 import { formatTime } from '../lib/time'
 import { LOCATIONS } from '../config/lockin'
 import { Sheet } from '../components/ui'
+import { AlfredDock } from '../components/VoiceUI'
 
 // Two bodies, one house: the Pocket Estate (phone) and the Command Centre (desktop).
 
@@ -217,6 +218,7 @@ export function DesktopShell({ children }: { children: ReactNode }) {
         </div>
         {children}
       </main>
+      <AlfredDock />
       <Sheet open={help} onClose={() => setHelp(false)} title="THE SHORTCUTS">
         <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 font-body text-[17px]">
           {[
@@ -226,6 +228,8 @@ export function DesktopShell({ children }: { children: ReactNode }) {
             ['W', 'Log 250 ml water'],
             ['F', 'Start a focus timer'],
             ['?', 'This cheat sheet'],
+            ['Hold Right Alt', 'Talk to ALFRED (release to send)'],
+            ['Ctrl/⌘ Shift A', 'ALFRED conversation mode on/off'],
             ['Esc', 'Close any panel'],
           ].map(([k, v]) => (
             <div key={k} className="contents">
@@ -236,7 +240,7 @@ export function DesktopShell({ children }: { children: ReactNode }) {
             </div>
           ))}
         </dl>
-        <p className="mt-4 text-[13px] text-[var(--ink-muted)] font-body italic">Rebinding keys + the ALFRED hold-to-talk hotkey arrive with the voice layer (Phase 2.5).</p>
+        <p className="mt-4 text-[13px] text-[var(--ink-muted)] font-body italic">System-wide hotkeys (working even when GHARANA is minimised) come with the Windows desktop app.</p>
       </Sheet>
     </div>
   )
