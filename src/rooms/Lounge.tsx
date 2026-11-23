@@ -23,6 +23,7 @@ import { HOME_TIME_ZONE } from '../config/lockin'
 import type { Big3Item, CaptureDest } from '../db/types'
 import { useVoice } from '../store/voice'
 import { useTrophies } from '../store/trophies'
+import { Nudges } from '../components/Nudges'
 import { CATEGORY_COLORS } from '../config/defaults'
 
 // THE LOUNGE — daily command. Phone shows the compact essentials (tap to see the rest);
@@ -373,6 +374,7 @@ export function Lounge() {
     return (
       <div className="flex flex-col gap-4">
         <Ticker items={ticker} />
+        <Nudges />
         <Clock />
         {briefing}
         {Score}
@@ -397,6 +399,7 @@ export function Lounge() {
   return (
     <div className="flex flex-col gap-5">
       <Ticker items={ticker} />
+      <Nudges />
       <div className="desk-grid">
         <div className="flex flex-col gap-5">
           <Clock />

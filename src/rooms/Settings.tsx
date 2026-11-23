@@ -14,6 +14,7 @@ import { LOCATIONS, type LocationId, type LockInPhase } from '../config/lockin'
 import { SiriSettings, VoiceSettings } from './VoiceSettings'
 import { DesktopSettings } from './DesktopSettings'
 import { LockSettings } from '../app/Lock'
+import { NotificationSettings, SyncSettings } from './CloudSettings'
 import { isDesktop } from '../lib/desktop'
 import { alfredStatus, getHouseKey, getUsage, setHouseKey, type Usage } from '../lib/alfred'
 
@@ -333,6 +334,8 @@ export function SettingsRoom() {
           <div id="voice"><DecoCard title="VOICE"><VoiceSettings /></DecoCard></div>
           <div id="siri"><DecoCard title="SIRI + SHORTCUTS"><SiriSettings /></DecoCard></div>
           {isDesktop() && <div id="desktop"><DecoCard title="DESKTOP HOTKEYS"><DesktopSettings /></DecoCard></div>}
+          <div id="sync"><DecoCard title="SYNC — PHONE ↔ LAPTOP"><SyncSettings /></DecoCard></div>
+          <div id="notifications"><DecoCard title="NOTIFICATIONS"><NotificationSettings /></DecoCard></div>
           <div id="lock"><DecoCard title="PRIVACY LOCK"><LockSettings /></DecoCard></div>
           <DecoCard title="ROOMS"><RoomManager /></DecoCard>
           <DecoCard title="YOUR DATA"><DataRoom /></DecoCard>

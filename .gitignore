@@ -17,3 +17,6 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 src-tauri/gen/
+
+# local-only secrets / generated SQL
+supabase/*.local.sql

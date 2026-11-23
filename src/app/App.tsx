@@ -33,6 +33,9 @@ import { Archive } from '../rooms/Archive'
 import { LockGate } from './Lock'
 import { useTrophies } from '../store/trophies'
 import { LevelUp } from '../components/LevelUp'
+import { loadCloudConfig } from '../lib/cloud'
+import { startAutoSync } from '../lib/sync'
+import { syncPushSettings } from '../lib/push'
 import { Captions, Orb, useVoiceHotkeys } from '../components/VoiceUI'
 import { useReminders } from '../store/reminders'
 import { startWakeIfEnabled, stopWakeWord, useVoice } from '../store/voice'
@@ -190,6 +193,20 @@ function Estate() {
       clearInterval(t)
     }
   }, [house.today])
+
+  // Cloud: load config, then keep syncing in the background (does nothing until you sign in).
+  useEffect(() => {
+    let stop = () => {}
+    void loadCloudConfig().then(() => {
+      stop = startAutoSync()
+    })
+    return () => stop()
+  }, [])
+
+  // Reminders follow you: when Travel Mode changes the time zone, tell the push server.
+  useEffect(() => {
+    void syncPushSettings()
+  }, [house.timeZone])
 
   // XP, levels + achievements: refresh on open, every few minutes, and when you come back to the app.
   useEffect(() => {

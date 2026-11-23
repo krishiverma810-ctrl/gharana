@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { db } from '../db/db'
 import { DEFAULT_PHASES, HOME_LOCATION, LOCATIONS, type LocationId, type LockInPhase } from '../config/lockin'
 import type { HabitSet } from '../db/types'
+import { DEFAULT_REMINDERS, type Reminder } from '../config/reminders'
 
 // App-wide settings, saved on-device in db.kv['settings'].
 // New fields MUST get a default in DEFAULT_SETTINGS — old saved settings are merged over it,
@@ -69,6 +70,8 @@ export interface Settings {
   /** Lock again after the app has been in the background this many minutes. */
   lockAfterMin: number
   socialLevel: number
+  /** Phase 4b: push reminder schedule. */
+  reminders: Reminder[]
 }
 
 export type AlfredMode = 'butler' | 'coach' | 'tutor' | 'strategist' | 'mate' | 'calm'
@@ -121,6 +124,7 @@ export const DEFAULT_SETTINGS: Settings = {
   bioCredential: '',
   lockAfterMin: 5,
   socialLevel: 1,
+  reminders: DEFAULT_REMINDERS,
 }
 
 interface SettingsStore extends Settings {

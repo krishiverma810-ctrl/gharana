@@ -16,6 +16,9 @@ import './estate.css'
 
 import { App } from './app/App'
 import { requestPersistentStorage } from './db/db'
+import { installSyncHooks } from './lib/sync'
+
+installSyncHooks()
 
 registerSW({ immediate: true })
 requestPersistentStorage()
