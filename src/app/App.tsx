@@ -28,6 +28,11 @@ import { Alfred } from '../rooms/Alfred'
 import { DeepaliCorner, FamilyRoom } from '../rooms/Mehfil2'
 import { AppLab, Closer, JobDesk, KSStudio, MpaDesk, NazaraHQ } from '../rooms/Boardroom'
 import { DentalWing, ReadingRoom, SkillsForge, Study } from '../rooms/Library'
+import { BulkLedger, ChallengeBoard, GroomingRoom, Inbox, Jukebox, Mehfil, MentorStudy, TrophyHall } from '../rooms/FullHouse'
+import { Archive } from '../rooms/Archive'
+import { LockGate } from './Lock'
+import { useTrophies } from '../store/trophies'
+import { LevelUp } from '../components/LevelUp'
 import { Captions, Orb, useVoiceHotkeys } from '../components/VoiceUI'
 import { useReminders } from '../store/reminders'
 import { startWakeIfEnabled, stopWakeWord, useVoice } from '../store/voice'
@@ -64,6 +69,15 @@ const ROOM_COMPONENTS: Record<string, ComponentType> = {
   dental: DentalWing,
   reading: ReadingRoom,
   forge: SkillsForge,
+  mehfil: Mehfil,
+  mentor: MentorStudy,
+  trophy: TrophyHall,
+  challenges: ChallengeBoard,
+  jukebox: Jukebox,
+  grooming: GroomingRoom,
+  bulk: BulkLedger,
+  inbox: Inbox,
+  archive: Archive,
 }
 
 type Shell = 'phone' | 'desktop'
@@ -109,7 +123,9 @@ export function App() {
       <Splash />
       {loaded && ready && (
         <HouseProvider>
-          <Estate />
+          <LockGate>
+            <Estate />
+          </LockGate>
         </HouseProvider>
       )}
     </>
@@ -175,6 +191,18 @@ function Estate() {
     }
   }, [house.today])
 
+  // XP, levels + achievements: refresh on open, every few minutes, and when you come back to the app.
+  useEffect(() => {
+    const r = () => document.visibilityState === 'visible' && void useTrophies.getState().refresh()
+    void useTrophies.getState().refresh()
+    const t = setInterval(r, 180_000)
+    document.addEventListener('visibilitychange', r)
+    return () => {
+      clearInterval(t)
+      document.removeEventListener('visibilitychange', r)
+    }
+  }, [])
+
   // In-app wake word (experimental).
   useEffect(() => {
     if (wakeWord) startWakeIfEnabled()
@@ -220,6 +248,7 @@ function Estate() {
       <CommandPalette />
       {shell === 'phone' && <Orb />}
       <Captions />
+      <LevelUp />
       <FocusFullscreen />
       <Toasts />
       <Confetti />

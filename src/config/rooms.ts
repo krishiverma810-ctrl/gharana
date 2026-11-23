@@ -80,5 +80,5 @@ export const roomById = (id: string) => ROOMS.find((r) => r.id === id)
 export const roomByPath = (path: string) => ROOMS.find((r) => r.path === path)
 
 /** Rooms with phase ≤ this are built and open; later ones show as locked doors. */
-export const BUILT_PHASE = 3
+export const BUILT_PHASE = 4
 export const isOpen = (r: RoomDef) => r.phase <= BUILT_PHASE

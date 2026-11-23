@@ -1,0 +1,110 @@
+// MEHFIL seed content. Everything is editable in the app.
+import type { Person } from '../db/types'
+
+let o = 0
+const p = (name: string, relation: string, circle: Person['circle'], freqDays: number): Person => ({ id: `p-${name.toLowerCase().replace(/\W+/g, '')}`, name, relation, circle, freqDays, order: o++ })
+
+export const DEFAULT_PEOPLE: Person[] = [
+  p('Mum', 'Mum', 'family', 2),
+  p('Dad', 'Dad', 'family', 3),
+  p('Brother', 'Brother', 'family', 3),
+  p('Deepali', 'Partner', 'partner', 1),
+  p('Nonna', 'Nonna', 'family', 7),
+  p('Sidak', 'Co-founder · NAZARA, K.S. VOL. 1', 'mates', 3),
+  p('Arnav', 'Mate', 'mates', 10),
+  p('Syed', 'Mate', 'mates', 10),
+  p('Nathan', 'Mate', 'mates', 14),
+  p('Ravdeep', 'Mate', 'mates', 14),
+  p('Aditya', 'Mate', 'mates', 14),
+  p('Harkie', 'Mate', 'mates', 14),
+]
+
+/** Social confidence reps — level 1 (easy) to 5 (hard). 12 per level. */
+export const SOCIAL_REPS: { level: number; text: string }[] = [
+  ...[
+    'Say good morning to someone you’d usually walk past.',
+    'Hold eye contact and smile at three people today.',
+    'Thank a worker by name (check the name badge).',
+    'Ask a shop assistant how their day is going — and listen.',
+    'Give one genuine compliment to someone you know.',
+    'Reply to a group chat with a voice note instead of text.',
+    'Ask a question in a tutorial or meeting.',
+    'Say “nice shoes / nice fit” to a stranger.',
+    'Call instead of texting someone today.',
+    'Introduce yourself to one new person.',
+    'Ask a GYG regular how their week was.',
+    'Hold a door and make small talk for 10 seconds.',
+  ].map((text) => ({ level: 1, text })),
+  ...[
+    'Start a 2-minute conversation with someone in a queue.',
+    'Ask a stranger for a recommendation (food, music, a spot).',
+    'Tell a short story at dinner from start to finish.',
+    'Disagree politely with someone and explain why.',
+    'Ask someone you admire one question about how they got there.',
+    'Compliment someone on something they did, not how they look.',
+    'Invite a mate to something you’re organising.',
+    'Message an old friend you’ve lost touch with.',
+    'Ask your lecturer or manager for feedback.',
+    'Order in Hindi or Punjabi (India mode bonus).',
+    'Speak first when a group goes quiet.',
+    'Introduce two people who should know each other.',
+  ].map((text) => ({ level: 2, text })),
+  ...[
+    'Ask for a discount or a better deal — politely.',
+    'Make a toast or say a few words at a family dinner.',
+    'Start a conversation with someone at the gym.',
+    'Ask someone a deeper question: “What are you working toward right now?”',
+    'Say no to something you don’t want to do — without over-explaining.',
+    'Pitch NAZARA to someone in under 30 seconds.',
+    'Ask a stranger to take a photo of you (and make it a moment).',
+    'Join a pickup game or class where you know nobody.',
+    'Share an opinion in a group that others might not agree with.',
+    'Tell a friend something you genuinely appreciate about them.',
+    'Ask an elder at a function about their life at your age.',
+    'Make plans with someone new — and lock in a date.',
+  ].map((text) => ({ level: 3, text })),
+  ...[
+    'Approach someone at an event and introduce yourself first.',
+    'Give a 2-minute talk or presentation and ask for questions.',
+    'Ask a business you like if they’d stock or collab with NAZARA.',
+    'Have the hard conversation you’ve been avoiding.',
+    'Film a K.S. VOL. 1 video talking straight to camera — and post it.',
+    'Ask someone for a mentorship coffee.',
+    'Lead a group decision from start to finish.',
+    'Give constructive feedback to a mate, kindly and clearly.',
+    'Network: talk to three people at an event and swap contacts.',
+    'Do a street interview for content.',
+    'Apologise properly for something, with no excuses.',
+    'Ask for what you want at work (shifts, role, raise).',
+  ].map((text) => ({ level: 4, text })),
+  ...[
+    'Host a gathering and make sure everyone feels included.',
+    'Give a speech at a wedding, birthday or MPA event.',
+    'Negotiate a real deal for NAZARA with a supplier or stockist.',
+    'Cold-message someone impressive in your field and get a reply.',
+    'Do a live stream or long-form talk on camera.',
+    'Tell someone how they changed your life.',
+    'Run a session teaching something to a group.',
+    'Interview for something that scares you.',
+    'Resolve a conflict between two other people.',
+    'Ask the question everyone is thinking but nobody asks.',
+    'Introduce yourself to a dentist and ask to shadow them.',
+    'Stand up for someone when it’s uncomfortable.',
+  ].map((text) => ({ level: 5, text })),
+]
+
+/** Sohbat — lines on brotherhood and company. Original, written for GHARANA. */
+export const SOHBAT: string[] = [
+  'You become the average of the five people you sit with. Choose the mehfil carefully.',
+  'A real brother tells you the truth when it costs him something.',
+  'Show up for the boring moments too — moving houses, hospital visits, 2am calls.',
+  'Loyalty isn’t loud. It’s showing up again and again.',
+  'Celebrate your mates’ wins like they’re yours. Envy is a lonely room.',
+  'The best friendships have both laughter and hard conversations.',
+  'If you only call when you need something, you’re not a friend, you’re a customer.',
+  'Your family gave you roots. Your friends help you grow branches. Water both.',
+  'Be the mate who remembers the birthday, the exam, the interview.',
+  'Good company makes the climb shorter.',
+  'Protect your peace, but don’t build walls so high nobody can visit.',
+  'Brotherhood is a habit, not a feeling. Practise it.',
+]

@@ -58,6 +58,17 @@ export interface Settings {
   siriSnapshot: boolean
   /** Dental Wing GPA target (7-point). */
   gpaTarget: number
+  /** Phase 4 */
+  goalWeight: number
+  calorieTarget: number
+  /** Passcode lock: SHA-256(salt + PIN). Empty = no lock. */
+  pinHash: string
+  pinSalt: string
+  /** WebAuthn credential id for Face ID / Touch ID / Windows Hello unlock. */
+  bioCredential: string
+  /** Lock again after the app has been in the background this many minutes. */
+  lockAfterMin: number
+  socialLevel: number
 }
 
 export type AlfredMode = 'butler' | 'coach' | 'tutor' | 'strategist' | 'mate' | 'calm'
@@ -103,6 +114,13 @@ export const DEFAULT_SETTINGS: Settings = {
   orbY: 0.72,
   siriSnapshot: true,
   gpaTarget: 6.5,
+  goalWeight: 75,
+  calorieTarget: 2900,
+  pinHash: '',
+  pinSalt: '',
+  bioCredential: '',
+  lockAfterMin: 5,
+  socialLevel: 1,
 }
 
 interface SettingsStore extends Settings {

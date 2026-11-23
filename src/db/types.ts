@@ -70,6 +70,14 @@ export interface DayLog {
   templateId?: string
   /** Marked as a travel/flight day: streaks are protected. */
   travelDay?: boolean
+  /** Phase 4: optional calorie count (simple, not obsessive). */
+  calories?: number
+  /** Phase 4: grooming checklist ticks for the day (step ids). */
+  groom?: string[]
+  /** Phase 4: fragrance worn today. */
+  scent?: string
+  /** Phase 4: Mentor’s Study — would 30-year-old me be proud of today? */
+  proud?: boolean
   updatedAt: number
 }
 
@@ -331,4 +339,50 @@ export interface Media {
   data: string
   caption?: string
   at: number
+}
+
+// ── Phase 4 ──────────────────────────────────────────────────────────
+
+export type Circle = 'family' | 'mates' | 'partner' | 'mentors' | 'work'
+
+/** MEHFIL — a person in your circle. */
+export interface Person {
+  id: string
+  name: string
+  relation: string
+  circle: Circle
+  /** Reach out at least every N days. */
+  freqDays: number
+  lastContact?: string // YYYY-MM-DD
+  birthday?: string // YYYY-MM-DD (year optional: 0000-MM-DD)
+  going?: string // what's going on with them
+  notes?: string
+  gifts?: string
+  order: number
+}
+
+/** BULK LEDGER — body measurements. */
+export interface BodyLog {
+  id: string
+  day: string
+  weight?: number // kg
+  waist?: number // cm
+  chest?: number
+  arm?: number
+  thigh?: number
+  notes?: string
+  at: number
+}
+
+/** CHALLENGE BOARD — 7 / 30 / 75-day challenges. */
+export interface Challenge {
+  id: string
+  name: string
+  rule: string
+  days: number
+  start: string
+  checks: string[] // days completed
+  mate?: string
+  status: 'active' | 'done' | 'failed'
+  createdAt: number
 }

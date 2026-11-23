@@ -13,7 +13,8 @@ The full spec is in [`GHARANA_v3_BUILD_PROMPT.md`](GHARANA_v3_BUILD_PROMPT.md). 
 - [x] **Phase 2.5a** — Voice: Gold Orb (hold / tap / double-tap / drag), conversation mode, captions, 25+ offline voice commands, spoken replies (device or premium), desktop dock + Right-Alt hold-to-talk, Memory Bank, reminders, Siri bridge (`kind: siri | quick`, Upstash queue), morning briefing
 - [x] **Phase 2.5b** — Windows desktop app (Tauri, `src-tauri/`): system-wide hotkeys (rebindable), always-on-top ALFRED bar, tray, close-to-tray, launch on startup, native Windows speech recognition. Build: `npx tauri build` → `src-tauri/target/release/bundle/nsis/`
 - [x] **Phase 3** — Boardroom + Library: Closer (kanban + Wins Wall + daily tactic), NAZARA HQ, K.S. VOL. 1 Studio (growth chart), App Lab (feature requests → Claude Code), Job Desk (+ P-licence logbook), MPA Desk, Study (units, WAM/GPA, SM-2 flashcards, explain-it-back), Dental Wing (GAMSAT, experience, interview practice), Reading Room, Skills Forge (20/100-hour milestones, language corner)
-- [ ] Phase 4 — Full House · [ ] Phase 5 — Polish
+- [x] **Phase 4a** — Full House (in-app): Mehfil (people cards that go cold, birthdays, check-ins, 60 social reps, sohbat), Mentor’s Study (30-year-old me, vision board, letters from ALFRED), Trophy Hall (XP, levels, 136 achievements, Wins Wall, season pass rewards), Challenge Board (7/30/75-day + vs a mate), Jukebox, Grooming Room (AM/PM routine, fragrance rotation, haircuts, ALFRED fit check), Bulk Ledger (weight chart, measurements, private progress photos, protein/kcal quick-adds incl. India meals), Inbox (sort captures into rooms), Archive (every day as a page, week/month/lock-in reports), shareable story cards, passcode + Face ID lock, Sunday Review (local pattern-spotting + ALFRED proposals you approve)
+- [ ] Phase 4b — Supabase sync (phone ↔ laptop) + push notifications · [ ] Phase 5 — Polish
 
 ## Run it
 ```bash

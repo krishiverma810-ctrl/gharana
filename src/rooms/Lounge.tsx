@@ -22,6 +22,7 @@ import { QUOTES } from '../config/quotes'
 import { HOME_TIME_ZONE } from '../config/lockin'
 import type { Big3Item, CaptureDest } from '../db/types'
 import { useVoice } from '../store/voice'
+import { useTrophies } from '../store/trophies'
 import { CATEGORY_COLORS } from '../config/defaults'
 
 // THE LOUNGE — daily command. Phone shows the compact essentials (tap to see the rest);
@@ -293,6 +294,7 @@ export function Lounge() {
   const workouts = useLiveQuery(() => db.workouts.where('day').equals(today).toArray(), [today]) ?? []
   const [expanded, setExpanded] = useState(false)
   const voice = useVoice()
+  const lvl = useTrophies((t) => t.level.level)
   const briefing = house.hour >= 4 && house.hour < 12 && (
     <DecoCard title="MORNING BRIEFING">
       <button
@@ -321,6 +323,7 @@ export function Lounge() {
   const ticker = [
     `PALETTE: ${house.palette.name}`,
     `HOUSE SCORE ${score.total}`,
+    `LEVEL ${lvl}`,
     `RITES ${score.doneCount}/${score.habitCount}`,
     topStreak.n ? `${topStreak.name.toUpperCase()} STREAK ${topStreak.n} · ${rankFor(topStreak.n).rank.name}` : 'START A STREAK TODAY',
     next ? `${next.name.toUpperCase()} IN ${daysBetween(today, next.start)} DAYS` : 'LOCK-IN COMPLETE',

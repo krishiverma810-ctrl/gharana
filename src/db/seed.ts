@@ -2,6 +2,7 @@ import { db } from './db'
 import { DEFAULT_GOALS, DEFAULT_HABITS, DEFAULT_TEMPLATES } from '../config/defaults'
 import { DEFAULT_TRIPS } from '../config/travel'
 import { SEED_LISTS } from '../config/library'
+import { DEFAULT_PEOPLE } from '../config/people'
 import { uid } from './db'
 
 // Seeds starting data once. Each seed step has its own flag so later phases
@@ -42,6 +43,21 @@ const SEED_STEPS: { key: string; run: () => Promise<void> }[] = [
       }
       if (!(await db.items.where('[room+kind]').equals(['forge', 'skill']).count())) {
         await db.items.bulkAdd(['Keyboard', 'Cooking', 'Boxing', 'Design'].map((text) => ({ id: uid(), room: 'forge', kind: 'skill', text, at: t++ })))
+      }
+    },
+  },
+  {
+    key: 'seed:p4-people-grooming',
+    run: async () => {
+      if (!(await db.people.count())) await db.people.bulkPut(DEFAULT_PEOPLE)
+      let t = Date.now()
+      const steps: [string, string[]][] = [
+        ['am', ['Cold face wash / gentle cleanser', 'Moisturiser', 'Sunscreen SPF 50']],
+        ['pm', ['Cleanser', 'Treatment (e.g. niacinamide)', 'Moisturiser', 'Lip balm']],
+      ]
+      for (const [kind, list] of steps) {
+        if (await db.items.where('[room+kind]').equals(['grooming', kind]).count()) continue
+        await db.items.bulkAdd(list.map((text) => ({ id: uid(), room: 'grooming', kind, text, at: t++ })))
       }
     },
   },

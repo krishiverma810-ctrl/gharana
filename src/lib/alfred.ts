@@ -547,8 +547,9 @@ export async function pushSnapshotForSiri(force = false) {
 }
 
 /** Ask ALFRED a single question outside the daily chat (graders, idea generators…). Returns his reply. */
-export async function askOnce(prompt: string): Promise<string> {
+export async function askOnce(prompt: string, images: BlockParam[] = []): Promise<string> {
   await checkBudget()
-  const { messages } = await loop([{ role: 'user', content: prompt }, { role: 'system', content: await buildSnapshot() }], {})
+  const content: string | BlockParam[] = images.length ? [...images, { type: 'text', text: prompt }] : prompt
+  const { messages } = await loop([{ role: 'user', content }, { role: 'system', content: await buildSnapshot() }], {})
   return lastReply({ id: 'once', day: '', messages, chips: {}, updatedAt: 0 })
 }

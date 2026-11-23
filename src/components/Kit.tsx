@@ -24,7 +24,7 @@ export async function fileToDataUrl(file: File, max = 1000): Promise<string> {
   return c.toDataURL('image/jpeg', 0.8)
 }
 
-export function MediaBoard({ room, kind, empty }: { room: string; kind: string; empty?: string }) {
+export function MediaBoard({ room, kind, empty, blur }: { room: string; kind: string; empty?: string; blur?: boolean }) {
   const media = useLiveQuery(() => db.media.where('[room+kind]').equals([room, kind]).reverse().sortBy('at'), [room, kind]) ?? []
   const input = useRef<HTMLInputElement>(null)
   const [open, setOpen] = useState<Media | null>(null)
@@ -47,7 +47,7 @@ export function MediaBoard({ room, kind, empty }: { room: string; kind: string; 
         </button>
         {media.map((m) => (
           <button key={m.id} className="media-tile" onClick={() => setOpen(m)}>
-            <img src={m.data} alt={m.caption ?? ''} loading="lazy" />
+            <img src={m.data} alt={m.caption ?? ''} loading="lazy" className={blur ? 'blurred' : undefined} />
             {m.caption && <span>{m.caption}</span>}
           </button>
         ))}
