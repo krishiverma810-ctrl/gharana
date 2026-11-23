@@ -37,6 +37,7 @@ function friendly(e: unknown): string {
   if (m === 'no_speech_input') return 'This browser can’t listen. Use the mic on your keyboard instead, or turn on the premium voice in Settings.'
   if (m === 'mic_denied') return 'Microphone access is off. Allow it for this app in Settings → Safari → Microphone (or the browser’s site settings).'
   if (m === 'network') return 'Speech recognition needs a connection on this device.'
+  if (m === 'speech_busy') return 'Windows speech is busy — give it five seconds and try again. If it keeps happening, quit GHARANA from the tray and reopen it.'
   if (m === 'speech_privacy') return 'Windows needs “Online speech recognition” switched on: Settings → Privacy & security → Speech → On. Then try again.'
   return m
 }
@@ -54,7 +55,7 @@ export const useVoice = create<VoiceStore>((set, get) => {
       if (!get().convo) return
       if (!text) {
         if (retry < 1) return listenOnce(retry + 1)
-        set({ convo: false, state: 'idle', caption: 'I’ll be here, sir.', captionAt: Date.now() })
+        set({ convo: false, state: 'idle', caption: 'I didn’t hear anything, sir — I’ll be here. (If you did speak, check Windows is using the right microphone.)', captionAt: Date.now() })
         return
       }
       await get().ask(text)
@@ -93,7 +94,11 @@ export const useVoice = create<VoiceStore>((set, get) => {
       listener = null
       void l
         .stop()
-        .then((text) => (text ? get().ask(text) : set({ state: 'idle', heard: '' })))
+        .then((text) =>
+          text
+            ? get().ask(text)
+            : set({ state: 'idle', heard: '', caption: 'I didn’t hear anything, sir. Hold the keys, speak, then let go — and check Windows is using the right microphone.', captionAt: Date.now() }),
+        )
         .catch((e) => set({ state: 'idle', error: friendly(e), caption: friendly(e), captionAt: Date.now() }))
     },
 

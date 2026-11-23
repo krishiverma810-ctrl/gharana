@@ -13,7 +13,7 @@ use std::sync::{mpsc, Arc, Mutex};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 use windows::core::Ref;
-use windows::Foundation::{TimeSpan, TypedEventHandler};
+use windows::Foundation::{AsyncStatus, IAsyncAction, IAsyncOperation, TimeSpan, TypedEventHandler};
 use windows::Globalization::Language;
 use windows::Media::SpeechRecognition::{
     SpeechContinuousRecognitionCompletedEventArgs, SpeechContinuousRecognitionResultGeneratedEventArgs,
@@ -31,6 +31,49 @@ struct Active {
     _rec: SpeechRecognizer,
     session: SpeechContinuousRecognitionSession,
     text: Arc<Mutex<String>>,
+    /// Set before we stop a session, so its late "Completed" event can't end the NEXT listen.
+    done_sent: Arc<Mutex<bool>>,
+}
+
+/// Windows' speech service can get stuck (e.g. after the app was force-closed mid-listen).
+/// Never block forever: give up after `secs` and tell the user instead of freezing every later attempt.
+const BUSY: &str = "speech_busy";
+fn wait_action(a: windows::core::Result<IAsyncAction>, secs: u64) -> Result<(), String> {
+    let a = a.map_err(friendly)?;
+    let until = std::time::Instant::now() + Duration::from_secs(secs);
+    loop {
+        match a.Status().map_err(friendly)? {
+            AsyncStatus::Started => {}
+            AsyncStatus::Completed => return a.GetResults().map_err(friendly),
+            _ => return a.GetResults().map_err(friendly).and(Err("Windows cancelled dictation.".into())),
+        }
+        if std::time::Instant::now() > until {
+            let _ = a.Cancel();
+            return Err(BUSY.into());
+        }
+        std::thread::sleep(Duration::from_millis(20));
+    }
+}
+fn wait_op<T: windows::core::RuntimeType + 'static>(op: windows::core::Result<IAsyncOperation<T>>, secs: u64) -> Result<T, String> {
+    let op = op.map_err(friendly)?;
+    let until = std::time::Instant::now() + Duration::from_secs(secs);
+    loop {
+        match op.Status().map_err(friendly)? {
+            AsyncStatus::Started => {}
+            _ => return op.GetResults().map_err(friendly),
+        }
+        if std::time::Instant::now() > until {
+            let _ = op.Cancel();
+            return Err(BUSY.into());
+        }
+        std::thread::sleep(Duration::from_millis(20));
+    }
+}
+
+/// Stop a session without letting its leftover events leak into the next one.
+fn end(a: Active, cancel: bool) {
+    *a.done_sent.lock().unwrap() = true;
+    let _ = if cancel { wait_action(a.session.CancelAsync(), 3) } else { wait_action(a.session.StopAsync(), 3) };
 }
 
 /// Map Windows errors to codes the web app turns into plain-English help.
@@ -67,7 +110,7 @@ fn start(app: &AppHandle, lang: &str, hold: bool) -> Result<Active, String> {
     }
     .map_err(friendly)?;
 
-    let compiled = rec.CompileConstraintsAsync().and_then(|op| op.join()).map_err(friendly)?;
+    let compiled = wait_op(rec.CompileConstraintsAsync(), 8)?;
     let status = compiled.Status().map_err(friendly)?;
     if status != SpeechRecognitionResultStatus::Success {
         return Err(format!("Windows couldn't start dictation ({status:?})."));
@@ -129,6 +172,7 @@ fn start(app: &AppHandle, lang: &str, hold: bool) -> Result<Active, String> {
         session.SetAutoStopSilenceTimeout(TimeSpan { Duration: 8 * 10_000_000 }).map_err(friendly)?;
         let app = app.clone();
         let text = text.clone();
+        let done_sent = done_sent.clone();
         session
             .Completed(&TypedEventHandler::new(move |_, _args: Ref<SpeechContinuousRecognitionCompletedEventArgs>| {
                 let mut sent = done_sent.lock().unwrap();
@@ -144,8 +188,8 @@ fn start(app: &AppHandle, lang: &str, hold: bool) -> Result<Active, String> {
         session.SetAutoStopSilenceTimeout(TimeSpan { Duration: 60 * 10_000_000 }).map_err(friendly)?;
     }
 
-    session.StartAsync().and_then(|a| a.join()).map_err(friendly)?;
-    Ok(Active { _rec: rec, session, text })
+    wait_action(session.StartAsync(), 6)?;
+    Ok(Active { _rec: rec, session, text, done_sent })
 }
 
 /// Start the recogniser thread. Returns the channel used to control it.
@@ -161,7 +205,7 @@ pub fn spawn(app: AppHandle) -> mpsc::Sender<Cmd> {
             match cmd {
                 Cmd::Start { lang, hold, reply } => {
                     if let Some(a) = active.take() {
-                        let _ = a.session.CancelAsync().and_then(|op| op.join());
+                        end(a, true);
                     }
                     match start(&app, &lang, hold) {
                         Ok(a) => {
@@ -177,9 +221,10 @@ pub fn spawn(app: AppHandle) -> mpsc::Sender<Cmd> {
                     let text = match active.take() {
                         Some(a) => {
                             // Stopping flushes the last phrase through ResultGenerated first.
-                            let _ = a.session.StopAsync().and_then(|op| op.join());
+                            let text = a.text.clone();
+                            end(a, false);
                             std::thread::sleep(Duration::from_millis(120));
-                            let t = a.text.lock().unwrap().trim().to_string();
+                            let t = text.lock().unwrap().trim().to_string();
                             t
                         }
                         None => String::new(),
@@ -188,7 +233,7 @@ pub fn spawn(app: AppHandle) -> mpsc::Sender<Cmd> {
                 }
                 Cmd::Cancel => {
                     if let Some(a) = active.take() {
-                        let _ = a.session.CancelAsync().and_then(|op| op.join());
+                        end(a, true);
                     }
                 }
             }
