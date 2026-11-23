@@ -158,4 +158,22 @@ export const CHANGELOG: { phase: string; date: string; notes: string }[] = [
   { phase: 'Phase 3', date: '23 Nov 2026', notes: 'Boardroom + Library: Closer, NAZARA HQ, K.S. VOL. 1, App Lab, Job Desk, MPA Desk, Study (spaced repetition), Dental Wing, Reading Room, Skills Forge.' },
   { phase: 'Phase 4', date: '23 Nov 2026', notes: 'Full House, Archive, Sunday Review, Trophy Hall, phone ↔ laptop sync, push reminders.' },
   { phase: 'Deepali v2', date: '23 Nov 2026', notes: 'Deepali’s Corner rebuilt: her clock anywhere, daily touches, follow-ups, the dossier, memories, date planner, gift lead-time warnings.' },
+  { phase: 'Phase 5', date: '24 Nov 2026', notes: 'Polish: faster start, Blueprint drag-to-edit, laptop widgets you arrange, 63 verses + 155 quotes + 30 travel workouts, accessibility, duplicate-list fix, What to build next.' },
+]
+
+/** App Lab → WHAT TO BUILD NEXT. Honest next steps after v3 — tap one to move it into Feature Requests. */
+export const WHAT_NEXT: { title: string; why: string; effort: 'S' | 'M' | 'L' }[] = [
+  { title: 'Weather on the Lounge', why: 'Free (Open-Meteo, no key). Morning briefing could say “take a jacket”.', effort: 'S' },
+  { title: 'Split view on laptop', why: 'Two rooms side by side — Blueprint + Study, Closer + NAZARA HQ.', effort: 'M' },
+  { title: 'Right-click menus on laptop', why: 'Right-click a habit, deal or card to edit, skip or delete fast.', effort: 'S' },
+  { title: 'Bulk-edit tables', why: 'Spreadsheet-style editing for money, flashcards and applications.', effort: 'M' },
+  { title: 'Import flashcards from Quizlet / Anki', why: 'Paste a CSV export instead of typing every card.', effort: 'S' },
+  { title: 'Bank CSV import for the Vault', why: 'Drop in a CommBank / ANZ statement and auto-sort the spending.', effort: 'M' },
+  { title: 'Apple Health via Shortcuts', why: 'Steps, sleep and workouts flow in automatically each night.', effort: 'M' },
+  { title: 'Google Calendar two-way sync', why: 'Uni timetable and GYG shifts appear in Blueprint by themselves.', effort: 'L' },
+  { title: 'Photo backup to the cloud', why: 'Progress photos and memories sync too (Supabase Storage, free tier).', effort: 'M' },
+  { title: 'Auto Travel Mode by location', why: 'Lands at the Gold Coast → skin, habit set and time zone switch on their own.', effort: 'S' },
+  { title: 'Weekly report email', why: 'Sunday Review summary lands in your inbox as a deco PDF.', effort: 'M' },
+  { title: 'Spotify now-playing in the Jukebox', why: 'Log what you studied to and build focus playlists from it.', effort: 'M' },
+  { title: 'Siri logging (Upstash, free)', why: '“Hey Siri, log 500 ml water” without opening the app.', effort: 'S' },
 ]

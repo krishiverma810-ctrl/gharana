@@ -16,7 +16,7 @@ The full spec is in [`GHARANA_v3_BUILD_PROMPT.md`](GHARANA_v3_BUILD_PROMPT.md). 
 - [x] **Phase 4a** — Full House (in-app): Mehfil (people cards that go cold, birthdays, check-ins, 60 social reps, sohbat), Mentor’s Study (30-year-old me, vision board, letters from ALFRED), Trophy Hall (XP, levels, 136 achievements, Wins Wall, season pass rewards), Challenge Board (7/30/75-day + vs a mate), Jukebox, Grooming Room (AM/PM routine, fragrance rotation, haircuts, ALFRED fit check), Bulk Ledger (weight chart, measurements, private progress photos, protein/kcal quick-adds incl. India meals), Inbox (sort captures into rooms), Archive (every day as a page, week/month/lock-in reports), shareable story cards, passcode + Face ID lock, Sunday Review (local pattern-spotting + ALFRED proposals you approve)
 - [x] **Phase 4b** — Supabase sync (phone ↔ laptop, offline-first, newest edit wins) + push notifications (server-scheduled, follow Travel Mode) + .ics fallback
 - [x] **Deepali’s Corner v2** — five tabs: Today (her clock in any zone, awake/asleep, call windows, time converter, countdown, three daily touches, follow-ups on her big days, question of the night, call log) · Her (the dossier: orders, taste, sizes, how she works, her world; her people; promises) · Us (memories, firsts + on-this-day, reasons, bucket list, inside jokes, after-a-fight notes) · Plans (Surprise-me date picker, ALFRED date planner, date log, Bali) · Gifts (occasions with lead-time warnings, ALFRED gift finder, help-me-say-it, gifts given)
-- [ ] Phase 5 — Polish
+- [x] **Phase 5** — Polish: rooms load on demand (startup code 1.2 MB → 0.69 MB, still fully offline), Blueprint Day view with drag-to-move / drag-to-resize, laptop Lounge widgets you can reorder, resize, hide and add, skip-to-content link + modal dialogs for screen readers, 63 Gita verses, 155 quotes, 30 travel workouts, seeding race fix (no more duplicate starter lists), App Lab “What to build next”, tests for sync + seeding
 
 ## Run it
 ```bash
@@ -25,15 +25,14 @@ npm run dev        # local dev server → http://localhost:5173
 npm run build      # type-check + production build into dist/
 npm run preview    # serve the production build → http://localhost:4173
 npm run icons      # regenerate PNG icons from public/favicon.svg
+npm test           # sync + seeding tests (in-memory database, no network)
 ```
 Pushing to `main` on GitHub makes Vercel auto-deploy → **https://gharana-blue.vercel.app**
 
-## Phase 1 notes / known gaps
-- Blueprint blocks are edited by tapping them (start/end pickers); true drag-to-resize comes in Phase 5 polish.
-- 26 Gita verses + 50 quotes ship now; the full 60 / 150 sets arrive with later phases.
-- Desktop Lounge widgets are a fixed grid; drag/resize/add/remove widgets is Phase 4.
-- The ALFRED orb + docked panel arrive with ALFRED (Phase 2) and voice (Phase 2.5).
-- Scheduled push nudges (water, wind-down) are Phase 4; the focus timer can already notify.
+## Known gaps (see App Lab → What to build next)
+- Split view (two rooms side by side) and right-click menus on the laptop aren’t built yet.
+- Weather widget, bank CSV import, calendar sync and photo cloud backup are on the next list.
+- Siri logging needs a free Upstash database connected in Vercel (optional).
 
 ## One-run cloud setup
 `node scripts/setup-cloud.mjs` — asks for a Supabase token, a Vercel token and (optionally) an Anthropic key, then creates the Supabase project, tables and scheduler, sets every Vercel environment variable, redeploys and checks. Safe to run again.

@@ -1,4 +1,7 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@supabase/supabase-js'
+
+// The Supabase library (~150 KB) loads in the background after the app is on screen.
+let createClient: typeof import('@supabase/supabase-js').createClient | null = null
 
 // Cloud config comes from the server (/api/config), so all keys live in Vercel —
 // nothing to type on each device. Cached so the app knows it offline.
@@ -44,6 +47,7 @@ export async function loadCloudConfig(): Promise<CloudConfig | null> {
       /* offline — use cache */
     }
   }
+  if (config && !createClient) createClient = (await import('@supabase/supabase-js')).createClient
   return config
 }
 
@@ -51,7 +55,7 @@ export const cloudConfig = () => config
 
 /** The Supabase client (null until Supabase is set up in Vercel). */
 export function supa(): SupabaseClient | null {
-  if (!config) return null
+  if (!config || !createClient) return null
   client ??= createClient(config.supabaseUrl, config.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'gh-supabase-auth' } })
   return client
 }

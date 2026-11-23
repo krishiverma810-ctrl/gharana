@@ -11,9 +11,18 @@ import { downloadRemindersICS, disablePush, enablePush, pushSupported, sendTestP
 function useUser() {
   const [email, setEmail] = useState<string | null | undefined>(undefined)
   useEffect(() => {
-    void loadCloudConfig().then(async () => setEmail((await currentUser())?.email ?? null))
-    const sub = supa()?.auth.onAuthStateChange((_e, session) => setEmail(session?.user?.email ?? null))
-    return () => sub?.data.subscription.unsubscribe()
+    let unsub = () => {}
+    let alive = true
+    void loadCloudConfig().then(async () => {
+      if (!alive) return
+      setEmail((await currentUser())?.email ?? null)
+      const sub = supa()?.auth.onAuthStateChange((_e, session) => setEmail(session?.user?.email ?? null))
+      unsub = () => sub?.data.subscription.unsubscribe()
+    })
+    return () => {
+      alive = false
+      unsub()
+    }
   }, [])
   return email
 }

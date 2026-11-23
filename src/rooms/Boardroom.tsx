@@ -4,13 +4,13 @@ import { DecoCard } from '../components/DecoCard'
 import { Empty, Field, RoomHeader, Sheet } from '../components/ui'
 import { Icon } from '../components/Icon'
 import { ListCard } from '../components/ListCard'
-import { AskAlfred, LineChart, MediaBoard, NotesPad, Records, useItems } from '../components/Kit'
+import { AskAlfred, LineChart, MediaBoard, NotesPad, Records, addItem, useItems } from '../components/Kit'
 import { db, uid } from '../db/db'
 import { useHouse } from '../app/house'
 import { celebrate, toast } from '../store/ui'
 import { win } from '../lib/sound'
 import { daysBetween, dayNumber, shortDate } from '../lib/time'
-import { CHANGELOG, TACTICS } from '../config/library'
+import { CHANGELOG, TACTICS, WHAT_NEXT } from '../config/library'
 import type { Deal, DealStage } from '../db/types'
 
 // WING IV — THE BOARDROOM: Closer, NAZARA HQ, K.S. VOL. 1 Studio, App Lab, Job Desk, MPA Desk.
@@ -229,6 +229,24 @@ export function KSStudio() {
 }
 
 // ── THE APP LAB ───────────────────────────────────────────────────────
+function WhatNext() {
+  const requests = useItems('applab', 'feature')
+  const have = new Set(requests.map((r) => r.text))
+  return (
+    <ul>
+      {WHAT_NEXT.map((w) => (
+        <li key={w.title} className="list-row">
+          <span className="flex-1 min-w-0">
+            <span className="block font-body text-[16px]">{w.title} <span className="font-num text-[11px] text-[var(--ink-muted)]">· {w.effort === 'S' ? 'small' : w.effort === 'M' ? 'medium' : 'big'}</span></span>
+            <span className="block font-body text-[13px] text-[var(--ink-muted)]">{w.why}</span>
+          </span>
+          <button className="chip" disabled={have.has(w.title)} onClick={() => addItem('applab', 'feature', { text: w.title, sub: w.why })}>{have.has(w.title) ? 'Added' : '+ Request'}</button>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export function AppLab() {
   const requests = useItems('applab', 'feature')
   const open = requests.filter((r) => !r.done)
@@ -256,6 +274,7 @@ export function AppLab() {
               Copy as a request for Claude Code ({open.length})
             </button>
           </DecoCard>
+          <DecoCard title="WHAT TO BUILD NEXT"><WhatNext /></DecoCard>
           <DecoCard title="CHANGELOG">
             <ol className="flex flex-col gap-3">
               {[...CHANGELOG].reverse().map((c) => (

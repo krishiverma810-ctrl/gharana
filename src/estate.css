@@ -360,3 +360,41 @@ img.blurred { filter: blur(14px) saturate(0.6); transform: scale(1.15); }
 .day-chip { width: 28px; height: 30px; font-family: var(--font-num); font-size: 12px; color: var(--ink-muted); border: 1px solid var(--line); }
 .day-chip.on { background: var(--accent); color: var(--night); border-color: var(--accent); }
 .nudge { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+
+/* Phase 5 — room loading shimmer */
+.room-loading { display: grid; place-items: center; min-height: 40vh; }
+.room-loading span { width: 64px; height: 64px; border: 2px solid color-mix(in srgb, var(--accent) 25%, transparent); border-top-color: var(--accent); transform: rotate(45deg); animation: deco-spin 1s linear infinite; }
+@keyframes deco-spin { to { transform: rotate(405deg); } }
+
+/* Phase 5 — Blueprint day view */
+.day-canvas-scroll { max-height: 68vh; overflow-y: auto; overscroll-behavior: contain; border: 1px solid color-mix(in srgb, var(--accent) 15%, transparent); }
+.day-canvas { position: relative; }
+.dc-hour { position: absolute; left: 0; right: 0; height: 0; border-top: 1px solid color-mix(in srgb, var(--ink) 8%, transparent); }
+.dc-hour span { position: absolute; top: 2px; left: 4px; width: 46px; font-size: 11px; color: var(--ink-muted); }
+.dc-now { position: absolute; left: 50px; right: 0; height: 2px; background: var(--accent); box-shadow: 0 0 10px var(--accent); z-index: 3; pointer-events: none; }
+.dc-block { position: absolute; display: flex; flex-direction: column; overflow: hidden; padding: 2px 6px; border-left: 4px solid var(--cat); background: color-mix(in srgb, var(--cat) 22%, var(--night)); color: var(--ink); cursor: pointer; z-index: 1; user-select: none; }
+.dc-block:focus-visible { outline: 2px solid var(--accent); }
+.dc-block.editable { touch-action: none; cursor: grab; outline: 1px dashed color-mix(in srgb, var(--cat) 60%, transparent); }
+.dc-block.dragging { z-index: 4; cursor: grabbing; box-shadow: 0 6px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--accent); }
+.dc-title { font-size: 14px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dc-time { font-size: 10.5px; color: var(--ink-muted); }
+.dc-handle { position: absolute; left: 0; right: 0; height: 12px; touch-action: none; cursor: ns-resize; }
+.dc-handle.top { top: -2px; }
+.dc-handle.bottom { bottom: -2px; }
+.dc-handle::after { content: ''; position: absolute; left: 50%; top: 5px; width: 22px; height: 2px; margin-left: -11px; background: color-mix(in srgb, var(--ink) 55%, transparent); }
+
+/* Phase 5 — desktop Lounge widget grid */
+.widget-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: row dense; gap: 20px; align-items: start; }
+@media (max-width: 1180px) { .widget-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .widget.s3 { grid-column: span 2; } }
+.widget { min-width: 0; }
+.widget.s2 { grid-column: span 2; }
+.widget.s3 { grid-column: 1 / -1; }
+.widget-grid.editing .widget { outline: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 4px; cursor: grab; }
+.widget.dragging { opacity: 0.4; }
+.widget-bar { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; padding: 2px 4px; color: var(--accent); }
+.widget-bar .icon-btn { width: 28px; height: 28px; }
+
+/* Phase 5 — accessibility */
+.skip-link { position: fixed; left: 12px; top: -60px; z-index: 100; padding: 8px 14px; background: var(--accent); color: var(--night); font-family: var(--font-deco); letter-spacing: 0.15em; font-size: 12px; }
+.skip-link:focus { top: 12px; }
+main:focus { outline: none; }

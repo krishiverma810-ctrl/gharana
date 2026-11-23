@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { AnimatePresence, motion } from 'framer-motion'
 import { DecoCard } from '../components/DecoCard'
-import { Field, RoomHeader, Sheet, Toggle } from '../components/ui'
+import { Field, RoomHeader, Segmented, Sheet, Toggle } from '../components/ui'
+import { DayCanvas } from './BlueprintCanvas'
 import { Icon } from '../components/Icon'
 import { db, uid, updateDay } from '../db/db'
 import { autoTemplateId, useDay, useTemplates } from '../db/hooks'
@@ -264,6 +265,21 @@ export function Blueprint() {
   const tid = day.templateId ?? autoId
   const tpl = templates.find((t) => t.id === tid) ?? templates[0]
   const [edit, setEdit] = useState<Block | 'new' | null>(null)
+  const [view, setView] = useState<'list' | 'day'>(() => {
+    try {
+      return (localStorage.getItem('gharana:bpView') as 'list' | 'day') || 'list'
+    } catch {
+      return 'list'
+    }
+  })
+  const pickView = (v: 'list' | 'day') => {
+    setView(v)
+    try {
+      localStorage.setItem('gharana:bpView', v)
+    } catch {
+      /* private mode */
+    }
+  }
 
   if (!tpl) return <RoomHeader id="blueprint" />
 
@@ -294,7 +310,8 @@ export function Blueprint() {
       </div>
       <div className="bp-layout">
         <DecoCard title="TODAY">
-          <Timeline tpl={tpl} minute={minuteOfDay} onEdit={setEdit} />
+          <div className="mb-3"><Segmented value={view} onChange={pickView} options={[{ value: 'list', label: 'List' }, { value: 'day', label: 'Day view' }]} /></div>
+          {view === 'list' ? <Timeline tpl={tpl} minute={minuteOfDay} onEdit={setEdit} /> : <DayCanvas tpl={tpl} minute={minuteOfDay} onEdit={setEdit} />}
         </DecoCard>
         <div className="flex flex-col gap-5">
           <DecoCard title="FOCUS TIMER"><FocusCard /></DecoCard>

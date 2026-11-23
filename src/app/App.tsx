@@ -1,4 +1,4 @@
-import { useEffect, useState, type ComponentType } from 'react'
+import { Suspense, lazy, useEffect, useState, type ComponentType } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Skyline } from '../components/Skyline'
 import { Confetti, Splash, Toasts } from '../components/Overlays'
@@ -19,18 +19,8 @@ import { NightDebrief } from '../rooms/NightDebrief'
 import { Blueprint, FocusFullscreen } from '../rooms/Blueprint'
 import { Patrol } from '../rooms/Patrol'
 import { Vault } from '../rooms/Vault'
-import { SettingsRoom } from '../rooms/Settings'
 import { ComingSoon, Corridor } from '../rooms/Corridor'
-import { Concierge } from '../rooms/Concierge'
-import { CalendarRoom } from '../rooms/Calendar'
-import { Wildcard } from '../rooms/Wildcard'
 import { Alfred } from '../rooms/Alfred'
-import { FamilyRoom } from '../rooms/Mehfil2'
-import { DeepaliCorner } from '../rooms/Deepali'
-import { AppLab, Closer, JobDesk, KSStudio, MpaDesk, NazaraHQ } from '../rooms/Boardroom'
-import { DentalWing, ReadingRoom, SkillsForge, Study } from '../rooms/Library'
-import { BulkLedger, ChallengeBoard, GroomingRoom, Inbox, Jukebox, Mehfil, MentorStudy, TrophyHall } from '../rooms/FullHouse'
-import { Archive } from '../rooms/Archive'
 import { LockGate } from './Lock'
 import { useTrophies } from '../store/trophies'
 import { LevelUp } from '../components/LevelUp'
@@ -47,6 +37,33 @@ import { invoke, isDesktop, onDesktop } from '../lib/desktop'
 import { navigate } from './router'
 import { addWater, db } from '../db/db'
 import { toast } from '../store/ui'
+
+// Rooms beyond the daily core load on first open (they're all precached, so this still works offline).
+const SettingsRoom = lazy(() => import('../rooms/Settings').then((m) => ({ default: m.SettingsRoom })))
+const Concierge = lazy(() => import('../rooms/Concierge').then((m) => ({ default: m.Concierge })))
+const CalendarRoom = lazy(() => import('../rooms/Calendar').then((m) => ({ default: m.CalendarRoom })))
+const Wildcard = lazy(() => import('../rooms/Wildcard').then((m) => ({ default: m.Wildcard })))
+const FamilyRoom = lazy(() => import('../rooms/Mehfil2').then((m) => ({ default: m.FamilyRoom })))
+const DeepaliCorner = lazy(() => import('../rooms/Deepali').then((m) => ({ default: m.DeepaliCorner })))
+const AppLab = lazy(() => import('../rooms/Boardroom').then((m) => ({ default: m.AppLab })))
+const Closer = lazy(() => import('../rooms/Boardroom').then((m) => ({ default: m.Closer })))
+const JobDesk = lazy(() => import('../rooms/Boardroom').then((m) => ({ default: m.JobDesk })))
+const KSStudio = lazy(() => import('../rooms/Boardroom').then((m) => ({ default: m.KSStudio })))
+const MpaDesk = lazy(() => import('../rooms/Boardroom').then((m) => ({ default: m.MpaDesk })))
+const NazaraHQ = lazy(() => import('../rooms/Boardroom').then((m) => ({ default: m.NazaraHQ })))
+const DentalWing = lazy(() => import('../rooms/Library').then((m) => ({ default: m.DentalWing })))
+const ReadingRoom = lazy(() => import('../rooms/Library').then((m) => ({ default: m.ReadingRoom })))
+const SkillsForge = lazy(() => import('../rooms/Library').then((m) => ({ default: m.SkillsForge })))
+const Study = lazy(() => import('../rooms/Library').then((m) => ({ default: m.Study })))
+const BulkLedger = lazy(() => import('../rooms/FullHouse').then((m) => ({ default: m.BulkLedger })))
+const ChallengeBoard = lazy(() => import('../rooms/FullHouse').then((m) => ({ default: m.ChallengeBoard })))
+const GroomingRoom = lazy(() => import('../rooms/FullHouse').then((m) => ({ default: m.GroomingRoom })))
+const Inbox = lazy(() => import('../rooms/FullHouse').then((m) => ({ default: m.Inbox })))
+const Jukebox = lazy(() => import('../rooms/FullHouse').then((m) => ({ default: m.Jukebox })))
+const Mehfil = lazy(() => import('../rooms/FullHouse').then((m) => ({ default: m.Mehfil })))
+const MentorStudy = lazy(() => import('../rooms/FullHouse').then((m) => ({ default: m.MentorStudy })))
+const TrophyHall = lazy(() => import('../rooms/FullHouse').then((m) => ({ default: m.TrophyHall })))
+const Archive = lazy(() => import('../rooms/Archive').then((m) => ({ default: m.Archive })))
 
 const ROOM_COMPONENTS: Record<string, ComponentType> = {
   lounge: Lounge,
@@ -82,6 +99,10 @@ const ROOM_COMPONENTS: Record<string, ComponentType> = {
   bulk: BulkLedger,
   inbox: Inbox,
   archive: Archive,
+}
+
+function RoomLoading() {
+  return <div className="room-loading" aria-label="Loading room"><span /></div>
 }
 
 type Shell = 'phone' | 'desktop'
@@ -259,7 +280,7 @@ function Estate() {
             exit={reduced ? undefined : { opacity: 0, y: -6 }}
             transition={{ duration: 0.22 }}
           >
-            {content}
+            <Suspense fallback={<RoomLoading />}>{content}</Suspense>
           </motion.div>
         </AnimatePresence>
       </Shell>

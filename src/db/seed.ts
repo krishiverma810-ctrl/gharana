@@ -61,13 +61,49 @@ const SEED_STEPS: { key: string; run: () => Promise<void> }[] = [
       }
     },
   },
+  {
+    // Phase 5: an earlier bug could seed starter lists twice when two windows opened at once
+    // (e.g. the desktop app + its ALFRED bar). Remove exact duplicates in the starter lists only.
+    key: 'seed:p5-dedupe',
+    run: async () => {
+      const pairs: [string, string][] = [...SEED_LISTS.map((l) => [l.room, l.kind] as [string, string]), ['forge', 'skill'], ['grooming', 'am'], ['grooming', 'pm']]
+      for (const pair of pairs) {
+        const rows = (await db.items.where('[room+kind]').equals(pair).toArray()).sort((a, b) => a.at - b.at)
+        const seen = new Set<string>()
+        const extra: string[] = []
+        for (const r of rows) {
+          const k = `${r.text}|${r.sub ?? ''}|${r.date ?? ''}`
+          if (seen.has(k)) extra.push(r.id)
+          else seen.add(k)
+        }
+        if (extra.length) await db.items.bulkDelete(extra)
+      }
+    },
+  },
+  {
+    // The first App Lab requests are all built now — tick them off.
+    key: 'seed:p5-built',
+    run: async () => {
+      const built = new Set(SEED_LISTS.find((l) => l.room === 'applab' && l.kind === 'feature')?.items ?? [])
+      const rows = await db.items.where('[room+kind]').equals(['applab', 'feature']).toArray()
+      for (const r of rows) if (built.has(r.text) && !r.done) await db.items.update(r.id, { done: true })
+    },
+  },
 ]
 
-export async function ensureSeeded() {
-  for (const step of SEED_STEPS) {
-    const done = await db.kv.get(step.key)
-    if (done) continue
-    await step.run()
-    await db.kv.put({ key: step.key, value: Date.now() })
-  }
+let running: Promise<void> | null = null
+
+/** Runs each missing seed step once. Each step checks + sets its flag inside one transaction,
+ *  so two windows starting at the same moment can't both seed. */
+export function ensureSeeded(): Promise<void> {
+  running ??= (async () => {
+    for (const step of SEED_STEPS) {
+      await db.transaction('rw', db.tables, async () => {
+        if (await db.kv.get(step.key)) return
+        await step.run()
+        await db.kv.put({ key: step.key, value: Date.now() })
+      })
+    }
+  })().finally(() => (running = null))
+  return running
 }

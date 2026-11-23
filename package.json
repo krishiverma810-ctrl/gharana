@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "icons": "node scripts/make-icons.mjs"
+    "icons": "node scripts/make-icons.mjs",
+    "test": "npx -y tsx tests/sync.test.ts && npx -y tsx tests/seed.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.12.0",

@@ -68,3 +68,6 @@ export const QUOTES: Quote[] = [
   { by: 'Kabir', original: 'Jahaan daya tahaan dharm hai, jahaan lobh tahaan paap.\nJahaan krodh tahaan kaal hai, jahaan kshama tahaan aap.', text: 'Where there is kindness there is dharma; where there is greed, wrong. Where there is anger, ruin; where there is forgiveness, the divine.' },
   { by: 'Kabir', original: 'Saayi itna deejiye, ja mein kutumb samaaye.\nMain bhi bhookha na rahun, saadhu na bhookha jaaye.', text: 'Give me just enough to hold my family — so I don’t go hungry, and no guest at my door does either.' },
 ]
+
+import { MORE_QUOTES } from './quotes2'
+QUOTES.push(...MORE_QUOTES)

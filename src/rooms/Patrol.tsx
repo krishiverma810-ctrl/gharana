@@ -277,7 +277,7 @@ export function Patrol() {
                   {openW === t.id && (
                     <div className="mt-2">
                       <ul className="font-body text-[15px] text-[var(--ink-muted)] list-none">
-                        {t.moves.map((m) => <li key={m}>· {m}</li>)}
+                        {t.moves.map((m, i) => <li key={i}>· {m}</li>)}
                       </ul>
                       <button
                         className="deco-btn ghost w-full mt-2"

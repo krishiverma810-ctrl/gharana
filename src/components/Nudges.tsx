@@ -5,7 +5,7 @@ import { useHouse } from '../app/house'
 import { navigate } from '../app/router'
 import { useSettings } from '../store/settings'
 import { daysBetween } from '../lib/time'
-import { useFollowUps, useGiftAlerts } from '../rooms/Deepali'
+import { useFollowUps, useGiftAlerts } from '../lib/deepali'
 import { useItems } from './ListCard'
 
 // In-app nudges on the Lounge — work offline, no server needed. The top 3 that matter right now.

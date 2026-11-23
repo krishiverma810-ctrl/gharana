@@ -396,29 +396,164 @@ export function Lounge() {
     )
   }
 
+  const widgets: Record<string, { title: string; node: React.ReactNode }> = {
+    clock: { title: 'Clock', node: <Clock /> },
+    briefing: { title: 'Morning briefing', node: briefing || null },
+    score: { title: 'House Score', node: Score },
+    rites: { title: 'Rituals', node: rites },
+    big3: { title: 'Big 3', node: <DecoCard title="TODAY’S BIG 3"><Big3 day={today} /></DecoCard> },
+    now: { title: 'Now + next', node: <DecoCard><NowCard /></DecoCard> },
+    habits: { title: 'Today’s rites', node: <DecoCard title="TODAY’S RITES"><HabitList habits={habits} done={(id) => !!logs.get(id)?.value} /></DecoCard> },
+    verse: { title: 'The verse', node: <DecoCard title="THE VERSE"><VerseCard day={today} /></DecoCard> },
+    fuel: { title: 'Fuel station', node: <DecoCard title="FUEL STATION"><Fuel day={today} /></DecoCard> },
+    lockin: { title: 'The lock-in', node: <DecoCard title="THE LOCK-IN"><LockIn /></DecoCard> },
+    deals: { title: 'Deals in play', node: <DecoCard title="DEALS IN PLAY"><DealsWidget /></DecoCard> },
+    quote: { title: 'Words for today', node: <DecoCard title="WORDS FOR TODAY"><QuoteCard day={today} /></DecoCard> },
+    capture: { title: 'Quick capture', node: <DecoCard title="QUICK CAPTURE"><QuickCapture /></DecoCard> },
+  }
   return (
     <div className="flex flex-col gap-5">
       <Ticker items={ticker} />
       <Nudges />
-      <div className="desk-grid">
-        <div className="flex flex-col gap-5">
-          <Clock />
-          {briefing}
-          {Score}
-          {rites}
+      <WidgetGrid widgets={widgets} />
+    </div>
+  )
+}
+
+// ── Desktop widget grid: reorder (drag), resize (S/M/L), hide and add back ──
+interface LoungeLayout {
+  order: string[]
+  hidden: string[]
+  size: Record<string, 1 | 2 | 3>
+}
+const DEFAULT_LAYOUT: LoungeLayout = {
+  order: ['clock', 'big3', 'fuel', 'briefing', 'now', 'lockin', 'score', 'verse', 'quote', 'rites', 'habits', 'capture', 'deals'],
+  hidden: ['habits', 'deals'],
+  size: {},
+}
+const LAYOUT_KEY = 'lounge:layout'
+
+function WidgetGrid({ widgets }: { widgets: Record<string, { title: string; node: React.ReactNode }> }) {
+  const saved = useLiveQuery(() => db.kv.get(LAYOUT_KEY), [])
+  const lay: LoungeLayout = { ...DEFAULT_LAYOUT, ...((saved?.value as Partial<LoungeLayout>) ?? {}) }
+  const [editing, setEditing] = useState(false)
+  const [dragId, setDragId] = useState<string | null>(null)
+  const ids = [...lay.order.filter((id) => widgets[id]), ...Object.keys(widgets).filter((id) => !lay.order.includes(id))]
+  const shown = ids.filter((id) => !lay.hidden.includes(id))
+  const hidden = ids.filter((id) => lay.hidden.includes(id))
+  const save = (p: Partial<LoungeLayout>) => db.kv.put({ key: LAYOUT_KEY, value: { ...lay, order: ids, ...p } })
+  const moveTo = (id: string, target: string) => {
+    if (id === target) return
+    const o = ids.filter((x) => x !== id)
+    o.splice(o.indexOf(target), 0, id)
+    void save({ order: o })
+  }
+  const nudge = (id: string, dir: -1 | 1) => {
+    const i = shown.indexOf(id)
+    const t = shown[i + dir]
+    if (!t) return
+    const o = ids.filter((x) => x !== id)
+    o.splice(o.indexOf(t) + (dir > 0 ? 1 : 0), 0, id)
+    void save({ order: o })
+  }
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex justify-end gap-2">
+        {editing && <button className="deco-btn ghost" onClick={() => db.kv.delete(LAYOUT_KEY)}>Reset layout</button>}
+        <button className={`deco-btn ${editing ? '' : 'ghost'}`} onClick={() => setEditing(!editing)}>{editing ? 'Done' : 'Customise'}</button>
+      </div>
+      {editing && hidden.length > 0 && (
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="field-label !mb-0">ADD:</span>
+          {hidden.map((id) => <button key={id} className="chip" onClick={() => save({ hidden: lay.hidden.filter((x) => x !== id) })}>+ {widgets[id].title}</button>)}
         </div>
-        <div className="flex flex-col gap-5">
-          <DecoCard title="TODAY’S BIG 3"><Big3 day={today} /></DecoCard>
-          <DecoCard><NowCard /></DecoCard>
-          <DecoCard title="THE VERSE"><VerseCard day={today} /></DecoCard>
-        </div>
-        <div className="flex flex-col gap-5">
-          <DecoCard title="FUEL STATION"><Fuel day={today} /></DecoCard>
-          <DecoCard title="THE LOCK-IN"><LockIn /></DecoCard>
-          <DecoCard title="WORDS FOR TODAY"><QuoteCard day={today} /></DecoCard>
-          <DecoCard title="QUICK CAPTURE"><QuickCapture /></DecoCard>
-        </div>
+      )}
+      <div className={`widget-grid ${editing ? 'editing' : ''}`}>
+        {shown.map((id) => {
+          const w = widgets[id]
+          if (!w.node && !editing) return null
+          const size = lay.size[id] ?? 1
+          return (
+            <div
+              key={id}
+              className={`widget s${size} ${dragId === id ? 'dragging' : ''}`}
+              draggable={editing}
+              onDragStart={(e) => {
+                setDragId(id)
+                e.dataTransfer.effectAllowed = 'move'
+              }}
+              onDragEnd={() => setDragId(null)}
+              onDragOver={(e) => {
+                if (editing && dragId) e.preventDefault()
+              }}
+              onDrop={(e) => {
+                e.preventDefault()
+                if (dragId) moveTo(dragId, id)
+                setDragId(null)
+              }}
+            >
+              {editing && (
+                <div className="widget-bar">
+                  <span className="font-deco text-[10px] tracking-[0.2em] flex-1 truncate">⠿ {w.title.toUpperCase()}</span>
+                  <button className="icon-btn" aria-label={`Move ${w.title} earlier`} onClick={() => nudge(id, -1)}>‹</button>
+                  <button className="icon-btn" aria-label={`Move ${w.title} later`} onClick={() => nudge(id, 1)}>›</button>
+                  {([1, 2, 3] as const).map((n) => (
+                    <button key={n} className={`chip !px-2 !py-0 ${size === n ? 'on' : ''}`} aria-label={`Size ${'SML'[n - 1]}`} onClick={() => save({ size: { ...lay.size, [id]: n } })}>
+                      {'SML'[n - 1]}
+                    </button>
+                  ))}
+                  <button className="icon-btn" aria-label={`Hide ${w.title}`} onClick={() => save({ hidden: [...lay.hidden, id] })}>✕</button>
+                </div>
+              )}
+              {w.node ?? (
+                <DecoCard>
+                  <p className="font-body text-[var(--ink-muted)] text-center">{w.title} — shows in the morning</p>
+                </DecoCard>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
+  )
+}
+
+function HabitList({ habits, done }: { habits: { id: string; name: string }[]; done: (id: string) => boolean }) {
+  return (
+    <ul>
+      {habits.map((h) => (
+        <li key={h.id}>
+          <button className={`list-row w-full text-left ${done(h.id) ? 'done' : ''}`} onClick={() => navigate('/rites')}>
+            <span className={`mini-check ${done(h.id) ? 'on' : ''}`}>{done(h.id) ? '✓' : ''}</span>
+            <span className="flex-1 font-body text-[16px]">{h.name}</span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function DealsWidget() {
+  const deals = useLiveQuery(() => db.deals.where('stage').anyOf(['radar', 'table', 'closing']).toArray(), []) ?? []
+  if (!deals.length)
+    return (
+      <p className="font-body text-[var(--ink-muted)]">
+        Nothing in play. <button className="underline" onClick={() => navigate('/closer')}>Open The Closer</button>
+      </p>
+    )
+  return (
+    <ul>
+      {deals.slice(0, 6).map((d) => (
+        <li key={d.id}>
+          <button className="list-row w-full text-left" onClick={() => navigate('/closer')}>
+            <span className="flex-1 font-body text-[16px] truncate">{d.title}</span>
+            <span className="font-num text-[11px] text-[var(--accent)] uppercase">
+              {d.stage}
+              {d.due ? ` · ${d.due.slice(5)}` : ''}
+            </span>
+          </button>
+        </li>
+      ))}
+    </ul>
   )
 }

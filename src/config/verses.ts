@@ -1,6 +1,6 @@
 // Bhagavad Gita — daily verses. Sanskrit + IAST transliteration + plain English + how it applies to Krishi's life.
 // English renderings are written fresh for GHARANA (the Sanskrit text is public domain).
-// Phase 1 ships 26; the full 60+ set arrives in a later phase (and you can add your own in Settings).
+// 63 verses: 26 here + 37 in verses2.ts. You can add your own in Settings.
 
 export interface Verse {
   ref: string
@@ -194,3 +194,6 @@ export const VERSES: Verse[] = [
     apply: 'Wisdom plus action. Knowing and doing together. That’s where the wins live — that’s the whole house.',
   },
 ]
+
+import { MORE_VERSES } from './verses2'
+VERSES.push(...MORE_VERSES)

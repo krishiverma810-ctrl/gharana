@@ -98,7 +98,7 @@ export function PhoneShell({ children }: { children: ReactNode }) {
           </button>
         </div>
       </div>
-      <main className="phone-main">{children}</main>
+      <main id="main" tabIndex={-1} className="phone-main">{children}</main>
       <nav className="tabbar" aria-label="Rooms">
         {left.map((r) => (
           <Tab key={r.id} r={r} />
@@ -165,6 +165,7 @@ export function DesktopShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="desk-shell">
+      <a href="#main" className="skip-link">Skip to content</a>
       <aside className="sidebar">
         <button className="block text-left mb-5 px-3" onClick={() => navigate('/')}>
           <div className="font-display text-[28px] tracking-[0.12em] text-[var(--accent)]">GHARANA</div>
@@ -212,7 +213,7 @@ export function DesktopShell({ children }: { children: ReactNode }) {
           </button>
         </div>
       </aside>
-      <main className="desk-main">
+      <main id="main" tabIndex={-1} className="desk-main">
         <div className="absolute right-6 top-5 z-20">
           <FocusPill />
         </div>

@@ -12,6 +12,7 @@ import { useNow } from '../store/useClock'
 import { toast } from '../store/ui'
 import { addDays, dayNumber, daysBetween, formatTime, hmToMin, minToHm, prettyHm, shortDate, zonedParts } from '../lib/time'
 import { LOCATIONS } from '../config/lockin'
+import { nextOccurrence, useFollowUps } from '../lib/deepali'
 import { DISTANCE_DATES, GIFT_LEAD_DAYS, HER_ZONES, LOCAL_DATES, MILESTONES, PROFILE_GROUPS, QUESTIONS, TOUCHES } from '../config/deepali'
 
 // DEEPALI'S CORNER — everything about her and the two of you, in five tabs:
@@ -224,10 +225,6 @@ function CallLog() {
   )
 }
 
-/** Her events that have passed and you haven't asked about yet. */
-export function useFollowUps(today: string) {
-  return useItems(ROOM, 'herevent').filter((e) => e.date && e.date <= today && !e.done)
-}
 function FollowUps() {
   const { today } = useHouse()
   const due = useFollowUps(today)
@@ -447,22 +444,6 @@ function PlansTab({ name, p }: { name: string; p: HerProfile }) {
 }
 
 // ── GIFTS ────────────────────────────────────────────────────────────
-
-export function nextOccurrence(date: string, today: string) {
-  const md = date.slice(5)
-  let occ = `${today.slice(0, 4)}-${md}`
-  if (occ < today) occ = `${Number(today.slice(0, 4)) + 1}-${md}`
-  return occ
-}
-/** Occasions coming up within the gift lead time, with no gift sorted yet. */
-export function useGiftAlerts(today: string, away: boolean) {
-  const lead = away ? GIFT_LEAD_DAYS.away : GIFT_LEAD_DAYS.home
-  return useItems(ROOM, 'special')
-    .filter((d) => d.date)
-    .map((d) => ({ d, occ: nextOccurrence(d.date!, today) }))
-    .map((x) => ({ ...x, days: daysBetween(today, x.occ), sorted: !!x.d.meta?.[`sorted:${x.occ.slice(0, 4)}`] }))
-    .filter((x) => x.days <= lead && !x.sorted)
-}
 
 function Occasions() {
   const { today, away } = useHouse()
